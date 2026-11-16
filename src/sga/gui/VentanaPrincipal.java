@@ -1,6 +1,7 @@
 package gui;
 
 import estructuras.Pila;
+import modelo.Folio;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -37,8 +38,12 @@ public class VentanaPrincipal extends JFrame {
         add(contenido, BorderLayout.CENTER);
 
         for (String nombre : PANTALLAS) {
-            agregarPantalla(nombre);
+            if (!nombre.equals("Mi cuenta")) {
+                agregarPantalla(nombre);
+            }
         }
+        contenido.add(new PanelCuenta(crearFolioDeEjemplo()), "Mi cuenta");
+
         pantallaActual = PANTALLAS[0];
         cartas.show(contenido, pantallaActual);
     }
@@ -62,6 +67,14 @@ public class VentanaPrincipal extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(new JLabel("Pantalla: " + nombre, SwingConstants.CENTER));
         contenido.add(panel, nombre);
+    }
+
+    private Folio crearFolioDeEjemplo() {
+        Folio folio = new Folio();
+        folio.registrarCargo("Estancia 3 noches", 450000);
+        folio.registrarCargo("Desayuno", 30000);
+        folio.registrarPago("Anticipo 30%", 150000);
+        return folio;
     }
 
     private void mostrar(String nombre) {
