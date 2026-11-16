@@ -1,5 +1,6 @@
 package estructuras;
 
+import java.util.Comparator;
 import java.util.Iterator;
 
 /**
@@ -32,6 +33,34 @@ public class Grafo<T> implements Iterable<T> {
 
         private Vertice(T dato) {
             this.dato = dato;
+        }
+    }
+
+    /**
+     * Datos temporales que Dijkstra necesita por cada vértice.
+     */
+    private static class Registro<T> {
+        private final Vertice<T> vertice;
+        private double distancia = Double.POSITIVE_INFINITY;
+        private Registro<T> anterior;
+        private boolean definitivo;
+
+        private Registro(Vertice<T> vertice) {
+            this.vertice = vertice;
+        }
+    }
+
+    /**
+     * Elemento de la cola de prioridad de Dijkstra: un vértice con la
+     * distancia que tenía cuando se encoló.
+     */
+    private static class Entrada<T> {
+        private final Registro<T> registro;
+        private final double distancia;
+
+        private Entrada(Registro<T> registro, double distancia) {
+            this.registro = registro;
+            this.distancia = distancia;
         }
     }
 
@@ -130,6 +159,70 @@ public class Grafo<T> implements Iterable<T> {
             }
         }
         return false;
+    }
+
+    /**
+     * Ruta más corta (por suma de pesos) entre dos vértices, usando Dijkstra
+     * con una cola de prioridad. Devuelve la lista de vértices desde el origen
+     * hasta el destino, o una lista vacía si no hay camino.
+     */
+    public ListaEnlazada<T> dijkstra(T origen, T destino) {
+        verticeObligatorio(origen);
+        verticeObligatorio(destino);
+
+        ListaEnlazada<Registro<T>> registros = new ListaEnlazada<>();
+        for (Vertice<T> vertice : vertices) {
+            registros.agregarFinal(new Registro<>(vertice));
+        }
+
+        Registro<T> inicio = registroDe(registros, origen);
+        inicio.distancia = 0;
+        ColaPrioridad<Entrada<T>> pendientes =
+                new ColaPrioridad<>(Comparator.comparingDouble((Entrada<T> e) -> e.distancia));
+        pendientes.encolar(new Entrada<>(inicio, 0));
+
+        while (!pendientes.estaVacia()) {
+            Registro<T> actual = pendientes.desencolar().registro;
+            if (actual.definitivo) {
+                continue;
+            }
+            actual.definitivo = true;
+            if (actual.vertice.dato.equals(destino)) {
+                break;
+            }
+            for (Arista<T> arista : actual.vertice.aristas) {
+                Registro<T> vecino = registroDe(registros, arista.getDestino());
+                double nuevaDistancia = actual.distancia + arista.getPeso();
+                if (!vecino.definitivo && nuevaDistancia < vecino.distancia) {
+                    vecino.distancia = nuevaDistancia;
+                    vecino.anterior = actual;
+                    pendientes.encolar(new Entrada<>(vecino, nuevaDistancia));
+                }
+            }
+        }
+        return construirRuta(registroDe(registros, destino));
+    }
+
+    private ListaEnlazada<T> construirRuta(Registro<T> fin) {
+        ListaEnlazada<T> ruta = new ListaEnlazada<>();
+        if (fin.distancia == Double.POSITIVE_INFINITY) {
+            return ruta;
+        }
+        Registro<T> actual = fin;
+        while (actual != null) {
+            ruta.agregarInicio(actual.vertice.dato);
+            actual = actual.anterior;
+        }
+        return ruta;
+    }
+
+    private Registro<T> registroDe(ListaEnlazada<Registro<T>> registros, T dato) {
+        for (Registro<T> registro : registros) {
+            if (registro.vertice.dato.equals(dato)) {
+                return registro;
+            }
+        }
+        return null;
     }
 
     private Vertice<T> buscar(T dato) {
