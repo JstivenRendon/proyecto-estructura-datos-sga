@@ -1,5 +1,6 @@
 package pruebas;
 
+import estructuras.Cola;
 import estructuras.Conjunto;
 import estructuras.Pila;
 import excepciones.EstructuraVaciaException;
