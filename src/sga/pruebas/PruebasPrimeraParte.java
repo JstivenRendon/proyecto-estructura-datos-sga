@@ -1,16 +1,17 @@
 package pruebas;
 
-public class PruebasPrimeraParte {package sga.pruebas;
-import sga.estructuras.Cola;
-import sga.estructuras.Conjunto;
-import sga.estructuras.Pila;
-import sga.excepciones.EstructuraVaciaException;
-import sga.modelo.Folio;
-import sga.modelo.Huesped;
-import sga.modelo.Recepcionista;
-import sga.modelo.SolicitudExterna;
-import sga.servicios.ServicioRecepcion;
+import estructuras.Conjunto;
+import estructuras.Pila;
+import excepciones.EstructuraVaciaException;
+import modelo.Folio;
+import modelo.Huesped;
+import modelo.Recepcionista;
+import modelo.SolicitudExterna;
+import servicios.ServicioRecepcion;
+
 import java.time.LocalDate;
+
+public class PruebasPrimeraParte {
 
         private static int ok;
         private static int fail;

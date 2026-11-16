@@ -1,6 +1,8 @@
 package gui;
 
 
+import javax.swing.*;
+import java.awt.*;
 
 public class VentanaPrincipal extends JFrame {
 
@@ -24,5 +26,5 @@ public class VentanaPrincipal extends JFrame {
 
             return;
         }
-        }
-        }
+    }
+}
