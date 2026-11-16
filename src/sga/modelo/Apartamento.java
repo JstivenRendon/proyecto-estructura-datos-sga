@@ -1,8 +1,8 @@
-package com.sga.modelo;
-
-import com.sga.estructuras.ArbolBinarioBusqueda;
+package modelo;
 
 import java.time.LocalTime;
+
+import estructuras.ArbolBinarioBusqueda;
 
 public class Apartamento implements Comparable<Apartamento> {
     private final String codigo;

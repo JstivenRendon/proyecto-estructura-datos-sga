@@ -1,11 +1,11 @@
 package gui;
 
-import sga.comparadores.ComparadoresApartamento;
-import sga.estructuras.ListaEnlazada;
-import sga.excepciones.FechasInvalidasException;
-import sga.modelo.*;
-import sga.persistencia.CargadorEscenario;
-import sga.servicios.SistemaAlojamiento;
+import comparadores.ComparadoresApartamento;
+import estructuras.ListaEnlazada;
+import excepciones.FechasInvalidasException;
+import modelo.*;
+import persistencia.CargadorEscenario;
+import servicios.SistemaAlojamiento;
 
 import javax.swing.*;
 import java.awt.*;

@@ -1,4 +1,4 @@
-package com.sga.excepciones;
+package excepciones;
 
 public class CapacidadExcedidaException extends Exception {
     private static final long serialVersionUID = 1L;

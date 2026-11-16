@@ -1,4 +1,4 @@
-package com.sga.estructuras;
+package estructuras;
 
 import java.util.Iterator;
 

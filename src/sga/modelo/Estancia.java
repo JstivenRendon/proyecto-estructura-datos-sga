@@ -1,9 +1,9 @@
-package com.sga.modelo;
-
-import com.sga.excepciones.FechasInvalidasException;
+package modelo;
 
 import java.time.LocalDate;
 import java.util.Iterator;
+
+import excepciones.FechasInvalidasException;
 
 public class Estancia implements Iterable<LocalDate> {
     private final LocalDate fechaEntrada;

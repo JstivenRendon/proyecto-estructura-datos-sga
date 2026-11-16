@@ -1,4 +1,4 @@
-package sga.gui;
+package gui;
 
 import modelo.Folio;
 import modelo.Huesped;

@@ -1,49 +1,31 @@
 package modelo;
 
-import estructuras.Conjunto;
-import estructuras.ListaEnlazada;
-
 import java.time.LocalDate;
 
-/**
- * Huésped comparable por documento, para guardarlo en el árbol de búsqueda.
- */
 public class Huesped implements Comparable<Huesped> {
+    private final String nombre;
     private final String documento;
-    private String nombre;
-    private LocalDate fechaNacimiento;
-    private String telefono;
-    private String correo;
-    private String rutaFotografia;
-    private final Conjunto<String> favoritos = new Conjunto<>();
-    private final ListaEnlazada<Reserva> historial = new ListaEnlazada<>();
+    private final LocalDate fechaNacimiento;
+    private final String telefono;
+    private final String correo;
+    private final String rutaFotografia;
 
-    public Huesped(String documento, String nombre, LocalDate fechaNacimiento, String telefono, String correo) {
-        this.documento = documento;
+    public Huesped(String nombre, String documento, LocalDate fechaNacimiento,
+            String telefono, String correo, String rutaFotografia) {
         this.nombre = nombre;
+        this.documento = documento;
         this.fechaNacimiento = fechaNacimiento;
         this.telefono = telefono;
         this.correo = correo;
-    }
-
-    public boolean agregarFavorito(String codigoApartamento) {
-        return favoritos.agregar(codigoApartamento);
-    }
-
-    public void agregarAlHistorial(Reserva reserva) {
-        historial.agregarFinal(reserva);
-    }
-
-    public String getDocumento() {
-        return documento;
+        this.rutaFotografia = rutaFotografia;
     }
 
     public String getNombre() {
         return nombre;
     }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
+    public String getDocumento() {
+        return documento;
     }
 
     public LocalDate getFechaNacimiento() {
@@ -62,41 +44,10 @@ public class Huesped implements Comparable<Huesped> {
         return rutaFotografia;
     }
 
-    public void setRutaFotografia(String rutaFotografia) {
-        this.rutaFotografia = rutaFotografia;
-    }
-
-    public Conjunto<String> getFavoritos() {
-        return favoritos;
-    }
-
-    public ListaEnlazada<Reserva> getHistorial() {
-        return historial;
-    }
+    // TODO Integración Persona A: Conjunto<Apartamento> favoritos y ListaDoblementeEnlazada<Reserva> historial
 
     @Override
     public int compareTo(Huesped otro) {
-        return this.documento.compareToIgnoreCase(otro.documento);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Huesped)) {
-            return false;
-        }
-        return documento.equalsIgnoreCase(((Huesped) o).documento);
-    }
-
-    @Override
-    public int hashCode() {
-        return documento.toLowerCase().hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return nombre + " (" + documento + ")";
+        return documento.compareTo(otro.documento);
     }
 }

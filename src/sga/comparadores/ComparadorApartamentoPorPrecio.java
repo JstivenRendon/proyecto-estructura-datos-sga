@@ -1,8 +1,8 @@
-package com.sga.comparadores;
-
-import com.sga.modelo.Apartamento;
+package comparadores;
 
 import java.util.Comparator;
+
+import modelo.Apartamento;
 
 public class ComparadorApartamentoPorPrecio implements Comparator<Apartamento> {
     @Override

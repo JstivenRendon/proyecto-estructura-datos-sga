@@ -1,4 +1,4 @@
-package com.sga.modelo;
+package modelo;
 
 import java.time.LocalDateTime;
 

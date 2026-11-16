@@ -1,18 +1,18 @@
-package com.sga.pruebas;
+package pruebas;
 
-import com.sga.comparadores.ComparadorApartamentoPorCapacidad;
-import com.sga.comparadores.ComparadorApartamentoPorPrecio;
-import com.sga.comparadores.ComparadorApartamentoPorReservas;
-import com.sga.comparadores.ComparadorPrioridadPreparacion;
-import com.sga.estructuras.ArbolBinarioBusqueda;
-import com.sga.excepciones.FechasInvalidasException;
-import com.sga.modelo.Apartamento;
-import com.sga.modelo.CanalReserva;
-import com.sga.modelo.EstadoOperativo;
-import com.sga.modelo.EstadoReserva;
-import com.sga.modelo.Estancia;
-import com.sga.modelo.Huesped;
-import com.sga.modelo.Reserva;
+import excepciones.FechasInvalidasException;
+import modelo.Apartamento;
+import modelo.CanalReserva;
+import modelo.EstadoOperativo;
+import modelo.EstadoReserva;
+import modelo.Estancia;
+import modelo.Huesped;
+import modelo.Reserva;
+import comparadores.ComparadorApartamentoPorCapacidad;
+import comparadores.ComparadorApartamentoPorPrecio;
+import comparadores.ComparadorApartamentoPorReservas;
+import comparadores.ComparadorPrioridadPreparacion;
+import estructuras.ArbolBinarioBusqueda;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
