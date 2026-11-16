@@ -59,11 +59,7 @@ public class Grafo<T> implements Iterable<T> {
     }
 
     public ListaEnlazada<Arista<T>> adyacentes(T dato) {
-        Vertice<T> vertice = buscar(dato);
-        if (vertice == null) {
-            throw new IllegalArgumentException("El vértice no existe");
-        }
-        return vertice.aristas;
+        return verticeObligatorio(dato).aristas;
     }
 
     public boolean contiene(T dato) {
@@ -74,6 +70,68 @@ public class Grafo<T> implements Iterable<T> {
         return vertices.tamano();
     }
 
+    /**
+     * Recorrido en profundidad (recursivo). Devuelve los vértices
+     * en el orden en que se visitan, desde el origen.
+     */
+    public ListaEnlazada<T> dfs(T origen) {
+        verticeObligatorio(origen);
+        ListaEnlazada<T> recorrido = new ListaEnlazada<>();
+        Conjunto<T> visitados = new Conjunto<>();
+        dfsRecursivo(origen, visitados, recorrido);
+        return recorrido;
+    }
+
+    private void dfsRecursivo(T actual, Conjunto<T> visitados, ListaEnlazada<T> recorrido) {
+        visitados.agregar(actual);
+        recorrido.agregarFinal(actual);
+        for (Arista<T> arista : buscar(actual).aristas) {
+            T vecino = arista.getDestino();
+            if (!visitados.contiene(vecino)) {
+                dfsRecursivo(vecino, visitados, recorrido);
+            }
+        }
+    }
+
+    /**
+     * Recorrido en amplitud con una cola. Visita primero los vecinos
+     * más cercanos (por número de pasillos), nivel por nivel.
+     */
+    public ListaEnlazada<T> bfs(T origen) {
+        verticeObligatorio(origen);
+        ListaEnlazada<T> recorrido = new ListaEnlazada<>();
+        Conjunto<T> visitados = new Conjunto<>();
+        Cola<T> pendientes = new Cola<>();
+        visitados.agregar(origen);
+        pendientes.encolar(origen);
+        while (!pendientes.estaVacia()) {
+            T actual = pendientes.desencolar();
+            recorrido.agregarFinal(actual);
+            for (Arista<T> arista : buscar(actual).aristas) {
+                T vecino = arista.getDestino();
+                if (visitados.agregar(vecino)) {
+                    pendientes.encolar(vecino);
+                }
+            }
+        }
+        return recorrido;
+    }
+
+    /**
+     * Indica si desde el origen se puede llegar al destino por los pasillos.
+     */
+    public boolean alcanzable(T origen, T destino) {
+        if (!contiene(origen) || !contiene(destino)) {
+            return false;
+        }
+        for (T vertice : bfs(origen)) {
+            if (vertice.equals(destino)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private Vertice<T> buscar(T dato) {
         for (Vertice<T> vertice : vertices) {
             if (vertice.dato.equals(dato)) {
@@ -81,6 +139,14 @@ public class Grafo<T> implements Iterable<T> {
             }
         }
         return null;
+    }
+
+    private Vertice<T> verticeObligatorio(T dato) {
+        Vertice<T> vertice = buscar(dato);
+        if (vertice == null) {
+            throw new IllegalArgumentException("El vértice no existe");
+        }
+        return vertice;
     }
 
     @Override
