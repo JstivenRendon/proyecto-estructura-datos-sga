@@ -3,11 +3,11 @@
 
 **Proyecto:** Sistema de Gestión de Alojamiento (SGA)  
 **Alojamiento de referencia:** Aparta-Suites UQ, Salento, Quindío  
-**Asignatura:** [Completar]  
-**Integrantes:** [Completar]  
-**Docente:** [Completar]  
-**Institución:** [Completar]  
-**Fecha:** [Completar]
+**Asignatura:**Estructura e datos
+**Integrantes:** stiven rendon, jean mendez, luz nelly delgado
+**Docente:** jhan carlos ceballos
+**Institución:**Universidad deL Quindio
+**Fecha:** 16/11/2026
 
 ---
 
