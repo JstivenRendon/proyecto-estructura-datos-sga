@@ -48,7 +48,7 @@ public class VentanaPrincipal extends JFrame {
         JButton cargar = new JButton("Cargar escenario de prueba");
         cargar.addActionListener(e -> {
             sistema = CargadorEscenario.cargar();
-            panelMapa = new PanelMapa(sistema);
+            panelMapa.setSistema(sistema);
             refrescarTodo();
         });
         panel.add(titulo, BorderLayout.NORTH);
