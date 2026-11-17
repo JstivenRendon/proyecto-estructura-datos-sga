@@ -5,6 +5,7 @@ import estructuras.ListaEnlazada;
 import excepciones.FechasInvalidasException;
 import modelo.*;
 import persistencia.CargadorEscenario;
+import servicios.ServicioEstadisticas;
 import servicios.SistemaAlojamiento;
 
 import javax.swing.*;
@@ -181,6 +182,7 @@ public class VentanaPrincipal extends JFrame {
 
     private JPanel crearEstadisticas() {
         JPanel panel = new JPanel(new BorderLayout());
+        areaEstadisticas.setFont(new Font("Monospaced", Font.PLAIN, 13));
         areaEstadisticas.setEditable(false);
         panel.add(new JScrollPane(areaEstadisticas), BorderLayout.CENTER);
         return panel;
@@ -300,23 +302,9 @@ public class VentanaPrincipal extends JFrame {
             panelMapa.repaint();
         }
 
-        StringBuilder est = new StringBuilder();
-        est.append("Turno recepción: ").append(sistema.turnoActual()).append("\n");
-        est.append("Reservas por canal:\n");
-        int portal = 0, directa = 0, externa = 0, canceladas = 0;
-        for (Reserva r : sistema.getReservas()) {
-            if (r.getCanal() == CanalReserva.PORTAL) portal++;
-            if (r.getCanal() == CanalReserva.DIRECTA) directa++;
-            if (r.getCanal() == CanalReserva.EXTERNA) externa++;
-            if (r.getEstado().name().contains("CANCEL")) canceladas++;
-        }
-        est.append(" Portal=").append(portal).append(" Directa=").append(directa)
-                .append(" Externa=").append(externa).append(" Canceladas=").append(canceladas).append("\n");
-        est.append("Conflictos de canal:\n");
-        for (String c : sistema.getConflictosCanal()) {
-            est.append(" - ").append(c).append("\n");
-        }
-        areaEstadisticas.setText(est.toString());
+        LocalDate hoy = LocalDate.now();
+        ServicioEstadisticas estadisticas = new ServicioEstadisticas(sistema, hoy.minusDays(15), hoy.plusDays(15));
+        areaEstadisticas.setText("Turno recepción: " + sistema.turnoActual() + "\n\n" + estadisticas.generarReporte());
     }
 
     private Color colorEstado(Apartamento apto) {
