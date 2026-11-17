@@ -3,8 +3,7 @@ package servicios;
 import java.time.LocalDateTime;
 
 import estructuras.ArbolBinarioBusqueda;
-import estructuras.ColaPrioridadContrato;
-import estructuras.ColaPrioridadEnlazada;
+import estructuras.ColaPrioridad;
 import estructuras.ListaEnlazada;
 import excepciones.CapacidadExcedidaException;
 import excepciones.ReservaSolapadaException;
@@ -22,8 +21,8 @@ public class GestorReservas {
     private final ArbolBinarioBusqueda<Apartamento> catalogoApartamentos = new ArbolBinarioBusqueda<>();
     private final ArbolBinarioBusqueda<Huesped> catalogoHuespedes = new ArbolBinarioBusqueda<>();
     private final ListaEnlazada<Reserva> reservas = new ListaEnlazada<>();
-    private final ColaPrioridadContrato<Reserva> reservasPendientes =
-            new ColaPrioridadEnlazada<>(java.util.Comparator.comparing(Reserva::getFechaVencimiento));
+    private final ColaPrioridad<Reserva> reservasPendientes =
+            new ColaPrioridad<>(java.util.Comparator.comparing(Reserva::getFechaVencimiento));
     private Runnable callbackCheckout;
 
     public void registrarApartamento(Apartamento apartamento) {
@@ -232,7 +231,7 @@ public class GestorReservas {
     public int procesarVencimientos(LocalDateTime fechaHoraActual) throws TransicionEstadoInvalidaException {
         int procesadas = 0;
         while (!reservasPendientes.estaVacia()) {
-            Reserva reserva = reservasPendientes.verPrimero();
+            Reserva reserva = reservasPendientes.frente();
             if (reserva.getFechaVencimiento().isAfter(fechaHoraActual)) {
                 break;
             }
