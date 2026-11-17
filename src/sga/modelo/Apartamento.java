@@ -132,10 +132,18 @@ public class Apartamento implements Comparable<Apartamento> {
         }
     }
 
+    public void setTarifaBasePorPersona(double tarifaBasePorPersona) {
+        this.tarifaBasePorPersona = tarifaBasePorPersona;
+    }
+
     public void agregarReserva(Reserva reserva) {
         if (reserva != null) {
             reservas.insertar(reserva);
         }
+    }
+
+    public boolean existeSolapamiento(Estancia nuevaEstancia) {
+        return reservas.existeSolapamiento(nuevaEstancia);
     }
 
     public boolean haySolapamiento(Estancia estancia) {

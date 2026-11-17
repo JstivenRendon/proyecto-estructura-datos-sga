@@ -190,6 +190,40 @@ public class ArbolBinarioBusqueda<T extends Comparable<T>> implements Iterable<T
         return raiz == null;
     }
 
+    public boolean existeSolapamiento(Estancia nuevaEstancia) {
+        if (nuevaEstancia == null || raiz == null) {
+            return false;
+        }
+        return existeSolapamientoRecursivo(raiz, nuevaEstancia);
+    }
+
+    private boolean existeSolapamientoRecursivo(NodoBST<T> actual, Estancia nuevaEstancia) {
+        if (actual == null) {
+            return false;
+        }
+        if (!(actual.dato instanceof modelo.Reserva)) {
+            return false;
+        }
+        modelo.Reserva reservaActual = (modelo.Reserva) actual.dato;
+        if (reservaActual.getEstado() == modelo.EstadoReserva.CANCELADA
+                || reservaActual.getEstado() == modelo.EstadoReserva.NO_SHOW
+                || reservaActual.getEstado() == modelo.EstadoReserva.FINALIZADA) {
+            return existeSolapamientoRecursivo(actual.izquierdo, nuevaEstancia)
+                    || existeSolapamientoRecursivo(actual.derecho, nuevaEstancia);
+        }
+        if (nuevaEstancia.getFechaEntrada().isBefore(reservaActual.getEstancia().getFechaSalida())
+                && reservaActual.getEstancia().getFechaEntrada().isBefore(nuevaEstancia.getFechaSalida())) {
+            return true;
+        }
+        if (reservaActual.getEstancia().getFechaEntrada().compareTo(nuevaEstancia.getFechaSalida()) >= 0) {
+            return existeSolapamientoRecursivo(actual.izquierdo, nuevaEstancia);
+        }
+        if (existeSolapamientoRecursivo(actual.izquierdo, nuevaEstancia)) {
+            return true;
+        }
+        return existeSolapamientoRecursivo(actual.derecho, nuevaEstancia);
+    }
+
     @Override
     public Iterator<T> iterator() {
         return new Iterator<T>() {
