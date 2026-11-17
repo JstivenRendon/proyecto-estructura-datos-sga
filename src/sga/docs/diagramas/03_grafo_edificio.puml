@@ -1,0 +1,59 @@
+@startuml
+title SGA - Modelo del grafo del edificio
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "modelo" {
+  class NodoEdificio {
+    - id : String
+    - tipo : Tipo
+    - apartamento : Apartamento
+  }
+  class Apartamento
+}
+
+package "estructuras" {
+  class Grafo<T> {
+    - vertices : ListaEnlazada<Vertice<T>>
+    + agregarVertice(dato : T) : void
+    + agregarArista(origen : T, destino : T, peso : double) : void
+    + adyacentes(dato : T) : ListaEnlazada<Arista<T>>
+    + dfs(origen : T) : ListaEnlazada<T>
+    + bfs(origen : T) : ListaEnlazada<T>
+    + alcanzable(origen : T, destino : T) : boolean
+    + dijkstra(origen : T, destino : T) : ListaEnlazada<T>
+  }
+  class "Vertice<T>" as Vertice
+  class "Arista<T>" as Arista {
+    - destino : T
+    - peso : double
+  }
+}
+
+package "servicios y GUI" {
+  class SistemaAlojamiento
+  class PanelMapa
+}
+
+NodoEdificio --> Apartamento : referencia opcional
+Grafo --> Vertice
+Vertice --> Arista
+Grafo --> NodoEdificio : T
+SistemaAlojamiento --> Grafo : mapa
+PanelMapa --> SistemaAlojamiento
+PanelMapa --> NodoEdificio
+
+note right of Grafo
+El grafo del proyecto es ponderado.
+agregarArista crea la conexión en
+ambos sentidos (no dirigido).
+Los pesos negativos son rechazados.
+end note
+
+note bottom of PanelMapa
+El panel dibuja nodos y pasillos,
+resalta rutas, simula cierres de
+pasillos y detecta apartamentos
+inalcanzables desde recepción.
+end note
+@enduml

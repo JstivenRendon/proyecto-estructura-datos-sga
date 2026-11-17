@@ -1,0 +1,121 @@
+@startuml
+title SGA - Estructuras de datos propias
+skinparam classAttributeIconSize 0
+hide empty members
+
+class ListaEnlazada<T> {
+  - cabeza : Nodo<T>
+  - cola : Nodo<T>
+  - tamano : int
+  + agregarFinal(dato : T) : void
+  + agregarInicio(dato : T) : void
+  + obtener(indice : int) : T
+  + eliminar(indice : int) : T
+  + contiene(dato : T) : boolean
+  + iterator() : Iterator<T>
+}
+
+class "Nodo<T>" as NodoLista {
+  dato : T
+  anterior : Nodo<T>
+  siguiente : Nodo<T>
+}
+
+class Pila<T> {
+  - elementos : ListaEnlazada<T>
+  + apilar(dato : T) : void
+  + desapilar() : T
+  + cima() : T
+}
+
+class Cola<T> {
+  - elementos : ListaEnlazada<T>
+  + encolar(dato : T) : void
+  + desencolar() : T
+  + frente() : T
+}
+
+class ColaPrioridad<T> {
+  - comparador : Comparator<T>
+  - heap : T[]
+  - tamano : int
+  + encolar(dato : T) : void
+  + desencolar() : T
+  + frente() : T
+  - subir(indice : int) : void
+  - bajar(indice : int) : void
+}
+
+class ArbolBinarioBusqueda<T> {
+  - raiz : NodoBST<T>
+  + insertar(dato : T) : void
+  + buscar(dato : T) : T
+  + eliminar(dato : T) : boolean
+  + calcularAltura() : int
+  + recorridoInorden() : void
+  + recorridoPreorden() : void
+  + recorridoPostorden() : void
+  + existeSolapamiento(estancia : Estancia) : boolean
+}
+
+class "NodoBST<T>" as NodoBST {
+  dato : T
+  izquierdo : NodoBST<T>
+  derecho : NodoBST<T>
+}
+
+class ListaCircular<T> {
+  - actual : Nodo<T>
+  - tamano : int
+  + agregar(dato : T) : void
+  + turnoActual() : T
+  + avanzarTurno() : T
+}
+
+class Conjunto<T> {
+  - elementos : ListaEnlazada<T>
+  + agregar(dato : T) : boolean
+  + eliminar(dato : T) : boolean
+  + contiene(dato : T) : boolean
+}
+
+class Grafo<T> {
+  - vertices : ListaEnlazada<Vertice<T>>
+  + agregarVertice(dato : T) : void
+  + agregarArista(origen : T, destino : T, peso : double) : void
+  + adyacentes(dato : T) : ListaEnlazada<Arista<T>>
+  + dfs(origen : T) : ListaEnlazada<T>
+  + bfs(origen : T) : ListaEnlazada<T>
+  + alcanzable(origen : T, destino : T) : boolean
+  + dijkstra(origen : T, destino : T) : ListaEnlazada<T>
+}
+
+class "Vertice<T>" as Vertice {
+  dato : T
+  aristas : ListaEnlazada<Arista<T>>
+}
+class "Arista<T>" as Arista {
+  destino : T
+  peso : double
+}
+
+Pila --> ListaEnlazada : implementada con
+Cola --> ListaEnlazada : implementada con
+Conjunto --> ListaEnlazada : implementado con
+ListaEnlazada *-- NodoLista
+ArbolBinarioBusqueda *-- NodoBST
+Grafo --> ListaEnlazada
+Grafo *-- Vertice
+Vertice --> ListaEnlazada
+Vertice *-- Arista
+Grafo --> Conjunto : visitados
+Grafo --> Cola : BFS
+Grafo --> ColaPrioridad : Dijkstra
+
+note bottom
+ColaPrioridad es un heap binario mínimo sobre arreglo.
+El árbol usa nodos auxiliares propios en su iterador;
+no depende de la clase Pila<T> pública.
+El grafo agrega aristas en ambos sentidos.
+end note
+@enduml

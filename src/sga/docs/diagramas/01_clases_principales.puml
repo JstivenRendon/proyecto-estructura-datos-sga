@@ -1,0 +1,130 @@
+@startuml
+title SGA - Clases principales (vista de dominio y servicios)
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "modelo" {
+  class Apartamento {
+    - codigo : String
+    - nombre : String
+    - bloque : String
+    - piso : int
+    - numeroDormitorios : int
+    - capacidadMaxima : int
+    - tarifaBasePorPersona : double
+    - estadoOperativo : EstadoOperativo
+    - reservas : ArbolBinarioBusqueda<Reserva>
+    + disponibleEn(estancia : Estancia) : boolean
+    + agregarReserva(reserva : Reserva) : void
+    + tarifa(tipo : TipoTemporada) : double
+  }
+
+  class Huesped {
+    - nombre : String
+    - documento : String
+    - fechaNacimiento : LocalDate
+    - telefono : String
+    - correo : String
+    - favoritos : Conjunto<String>
+    - historial : ListaEnlazada<Object>
+    + agregarFavorito(codigo : String) : void
+    + agregarAlHistorial(item : Object) : void
+  }
+
+  class Reserva {
+    - idReserva : String
+    - titular : Huesped
+    - apartamento : Apartamento
+    - estancia : Estancia
+    - canal : CanalReserva
+    - estado : EstadoReserva
+    - fechaCreacion : LocalDateTime
+    - fechaVencimiento : LocalDateTime
+    - cantidadOcupantes : int
+    - folio : Folio
+    + personasQuePagan(noche : LocalDate) : int
+    + transicionarA(nuevoEstado : EstadoReserva) : void
+  }
+
+  class Estancia {
+    - fechaEntrada : LocalDate
+    - fechaSalida : LocalDate
+  }
+
+  class Folio {
+    - movimientos : ListaEnlazada<MovimientoFolio>
+    - deshacer : Pila<MovimientoFolio>
+    + registrarCargo(...) : void
+    + registrarPago(...) : void
+    + deshacerUltimaOperacion() : void
+    + saldo() : double
+  }
+
+  class MovimientoFolio {
+    - tipo : Tipo
+    - descripcion : String
+    - valor : double
+    - fecha : LocalDateTime
+    - esReverso : boolean
+    + contrario() : MovimientoFolio
+  }
+
+  class SolicitudExterna
+  class TareaPreparacion
+  class Temporada
+  class Recepcionista
+  class NodoEdificio
+}
+
+package "servicios" {
+  class SistemaAlojamiento
+  class GestorReservas
+  class GestorTemporadas
+  class CotizadorEstancia
+  class ValidadorDisponibilidad
+  class ServicioRecepcion
+  class ServicioEstadisticas
+  class AsignadorGruposBacktracking
+}
+
+package "estructuras" {
+  class ListaEnlazada<T>
+  class Pila<T>
+  class Cola<T>
+  class ColaPrioridad<T>
+  class ArbolBinarioBusqueda<T>
+  class ListaCircular<T>
+  class Conjunto<T>
+  class Grafo<T>
+}
+
+Reserva --> Huesped : titular
+Reserva --> Apartamento
+Reserva *-- Estancia
+Reserva *-- Folio
+Folio *-- MovimientoFolio
+Apartamento "1" o-- "0..*" Reserva : reservas
+Huesped --> Conjunto : favoritos
+Huesped --> ListaEnlazada : historial
+Apartamento --> ArbolBinarioBusqueda : reservas
+SistemaAlojamiento --> Apartamento
+SistemaAlojamiento --> Huesped
+SistemaAlojamiento --> Reserva
+SistemaAlojamiento --> Grafo : mapa
+SistemaAlojamiento --> Cola : solicitudes externas
+SistemaAlojamiento --> ColaPrioridad : preparaciones / vencimientos
+SistemaAlojamiento --> ListaCircular : turnos
+ServicioRecepcion --> Cola
+ServicioRecepcion --> ListaCircular
+CotizadorEstancia --> Estancia
+Grafo --> ListaEnlazada
+Grafo --> Conjunto
+Grafo --> ColaPrioridad
+
+note bottom
+Vista conceptual de las clases principales.
+No pretende enumerar todos los atributos ni métodos.
+Revisar nombres y relaciones contra el código final
+antes de usarla como diagrama definitivo de entrega.
+end note
+@enduml
