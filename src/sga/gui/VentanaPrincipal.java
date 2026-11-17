@@ -3,6 +3,7 @@ package gui;
 import comparadores.ComparadoresApartamento;
 import estructuras.ListaEnlazada;
 import excepciones.FechasInvalidasException;
+import excepciones.TransicionEstadoInvalidaException;
 import modelo.*;
 import persistencia.CargadorEscenario;
 import persistencia.LectorEscenario;
@@ -12,6 +13,7 @@ import servicios.SistemaAlojamiento;
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Comparator;
 
 public class VentanaPrincipal extends JFrame {
@@ -105,9 +107,6 @@ public class VentanaPrincipal extends JFrame {
         form.add(personas);
         form.add(orden);
         form.add(buscar);
-        form.add(crearDirecta);
-        form.add(crearPortal);
-        form.add(externa);
         areaReservas.setEditable(false);
         buscar.addActionListener(e -> buscarDisponibles(entrada.getText(), salida.getText(), personas.getText(), (String) orden.getSelectedItem()));
         crearDirecta.addActionListener(e -> crearReserva(doc.getText(), codigo.getText(), entrada.getText(), salida.getText(), CanalReserva.DIRECTA, false));
@@ -120,9 +119,80 @@ public class VentanaPrincipal extends JFrame {
                 JOptionPane.showMessageDialog(this, ex.getMessage());
             }
         });
-        panel.add(form, BorderLayout.NORTH);
+        JButton checkIn = new JButton("Check-in");
+        JButton checkOut = new JButton("Check-out");
+        checkIn.addActionListener(e -> registrarCheck(true));
+        checkOut.addActionListener(e -> registrarCheck(false));
+        JPanel llegadasSalidas = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        llegadasSalidas.add(new JLabel("Acciones:"));
+        llegadasSalidas.add(crearDirecta);
+        llegadasSalidas.add(crearPortal);
+        llegadasSalidas.add(externa);
+        llegadasSalidas.add(checkIn);
+        llegadasSalidas.add(checkOut);
+
+        JPanel norte = new JPanel(new GridLayout(0, 1));
+        norte.add(form);
+        norte.add(llegadasSalidas);
+        panel.add(norte, BorderLayout.NORTH);
         panel.add(new JScrollPane(areaReservas), BorderLayout.CENTER);
         return panel;
+    }
+
+    /**
+     * Check-in (reservas Confirmadas) o check-out (reservas En curso).
+     * El check-in solo procede si el apartamento está Preparado; el check-out deja
+     * el apartamento Pendiente de preparación y lo mete a la cola de aseo.
+     */
+    private void registrarCheck(boolean esCheckIn) {
+        EstadoReserva estadoNecesario = esCheckIn ? EstadoReserva.CONFIRMADA : EstadoReserva.EN_CURSO;
+        int cantidad = 0;
+        for (Reserva reserva : sistema.getReservas()) {
+            if (reserva.getEstado() == estadoNecesario) {
+                cantidad++;
+            }
+        }
+        if (cantidad == 0) {
+            JOptionPane.showMessageDialog(this, esCheckIn
+                    ? "No hay reservas confirmadas para hacer check-in"
+                    : "No hay reservas en curso para hacer check-out");
+            return;
+        }
+        Reserva[] candidatas = new Reserva[cantidad];
+        String[] etiquetas = new String[cantidad];
+        int i = 0;
+        for (Reserva reserva : sistema.getReservas()) {
+            if (reserva.getEstado() == estadoNecesario) {
+                candidatas[i] = reserva;
+                etiquetas[i] = reserva + " | " + reserva.getApartamento().getCodigo() + " | "
+                        + reserva.getEstancia() + " | " + reserva.getTitular().getNombre();
+                i++;
+            }
+        }
+        String elegida = (String) JOptionPane.showInputDialog(this, "Elija la reserva:",
+                esCheckIn ? "Check-in" : "Check-out", JOptionPane.QUESTION_MESSAGE, null, etiquetas, etiquetas[0]);
+        if (elegida == null) {
+            return;
+        }
+        Reserva reserva = null;
+        for (int k = 0; k < cantidad; k++) {
+            if (etiquetas[k].equals(elegida)) {
+                reserva = candidatas[k];
+            }
+        }
+        try {
+            if (esCheckIn) {
+                sistema.checkIn(reserva);
+                areaReservas.setText("Check-in realizado: " + reserva.getApartamento().getCodigo() + " queda Ocupado");
+            } else {
+                sistema.checkOut(reserva);
+                areaReservas.setText("Check-out realizado: " + reserva.getApartamento().getCodigo()
+                        + " queda Pendiente de preparación y entra a la cola de aseo");
+            }
+            refrescarTodo();
+        } catch (TransicionEstadoInvalidaException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage());
+        }
     }
 
     private JPanel crearCalendario() {
@@ -393,8 +463,29 @@ public class VentanaPrincipal extends JFrame {
         if (!hay) {
             sb.append("  (sin reservas)\n");
         }
-        JOptionPane.showMessageDialog(this, sb.toString(), "Apartamento " + apto.getCodigo(),
-                JOptionPane.INFORMATION_MESSAGE);
+        boolean fuera = apto.getEstado() == EstadoApartamento.FUERA_DE_SERVICIO;
+        String[] opciones = {"Cerrar", fuera ? "Volver a servicio" : "Poner fuera de servicio"};
+        int elegida = JOptionPane.showOptionDialog(this, sb.toString(), "Apartamento " + apto.getCodigo(),
+                JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, opciones, opciones[0]);
+        if (elegida != 1) {
+            return;
+        }
+        try {
+            if (fuera) {
+                // Al volver a servicio queda Pendiente de preparación y entra a la cola de aseo
+                apto.cambiarEstado(EstadoApartamento.PENDIENTE_PREPARACION);
+                sistema.getColaPreparacion().encolar(new TareaPreparacion(apto, false, LocalTime.MAX));
+            } else {
+                String motivo = JOptionPane.showInputDialog(this, "Motivo (obligatorio):");
+                if (motivo == null) {
+                    return;
+                }
+                apto.ponerFueraDeServicio(motivo);
+            }
+            refrescarTodo();
+        } catch (TransicionEstadoInvalidaException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage());
+        }
     }
 
     private Color colorEstado(Apartamento apto) {

@@ -163,6 +163,11 @@ public class SistemaAlojamiento {
     }
 
     public TareaPreparacion despacharPreparacion() throws TransicionEstadoInvalidaException {
+        // Si un apartamento quedó fuera de servicio, su tarea de aseo ya no aplica
+        while (!colaPreparacion.estaVacia()
+                && colaPreparacion.frente().getApartamento().getEstado() == EstadoApartamento.FUERA_DE_SERVICIO) {
+            colaPreparacion.desencolar();
+        }
         // Primero se mira el frente; solo se saca de la cola si el cambio de estado fue válido
         TareaPreparacion tarea = colaPreparacion.frente();
         tarea.getApartamento().cambiarEstado(EstadoApartamento.EN_PREPARACION);
@@ -199,7 +204,7 @@ public class SistemaAlojamiento {
         // El for-each recorre la cola en orden de prioridad sin sacar los elementos
         for (TareaPreparacion tarea : colaPreparacion) {
             NodoEdificio destino = buscarNodoApartamento(tarea.getApartamento().getCodigo());
-            if (destino == null) {
+            if (destino == null || tarea.getApartamento().getEstado() == EstadoApartamento.FUERA_DE_SERVICIO) {
                 continue;
             }
             ListaEnlazada<NodoEdificio> tramo = grafo.dijkstra(actual, destino);
