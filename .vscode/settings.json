@@ -2,5 +2,9 @@
     "java.project.sourcePaths": [
         "src/sga"
     ],
-    "java.project.outputPath": "out"
+    "java.project.outputPath": "out",
+    "code-runner.runInTerminal": true,
+    "code-runner.executorMap": {
+        "java": "cd \"$workspaceRoot\" && javac -encoding UTF-8 -sourcepath src/sga -d out src/sga/gui/Main.java && java -cp out gui.Main"
+    }
 }
