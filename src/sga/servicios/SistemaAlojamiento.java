@@ -26,6 +26,7 @@ public class SistemaAlojamiento {
     private final ListaEnlazada<Temporada> temporadas = new ListaEnlazada<>();
     private final Cola<SolicitudExterna> canalExterno = new Cola<>();
     private final ColaPrioridad<TareaPreparacion> colaPreparacion = new ColaPrioridad<>(ComparadorPreparacion.crear());
+    private final ListaEnlazada<TareaPreparacion> preparacionesTerminadas = new ListaEnlazada<>();
     private final ColaPrioridad<Reserva> pendientesPorVencer = new ColaPrioridad<>(
             Comparator.comparing(Reserva::getVenceEn)
     );
@@ -160,19 +161,56 @@ public class SistemaAlojamiento {
     }
 
     public TareaPreparacion despacharPreparacion() throws TransicionEstadoInvalidaException {
-        TareaPreparacion tarea = colaPreparacion.desencolar();
+        // Primero se mira el frente; solo se saca de la cola si el cambio de estado fue válido
+        TareaPreparacion tarea = colaPreparacion.frente();
         tarea.getApartamento().cambiarEstado(EstadoApartamento.EN_PREPARACION);
         tarea.getApartamento().cambiarEstado(EstadoApartamento.PREPARADO);
+        colaPreparacion.desencolar();
+        tarea.terminar();
+        preparacionesTerminadas.agregarFinal(tarea);
         return tarea;
     }
 
+    /**
+     * Ruta de aseo: sale del cuarto de aseo (o de recepción si no hay uno) y
+     * visita los apartamentos pendientes en el orden de la cola de prioridad.
+     * Cada tramo entre dos apartamentos se calcula con Dijkstra.
+     */
     public ListaEnlazada<NodoEdificio> rutaPreparacion() {
-        NodoEdificio recepcion = buscarNodoPorTipo(NodoEdificio.Tipo.RECEPCION);
-        if (recepcion == null || colaPreparacion.estaVacia()) {
-            return new ListaEnlazada<>();
+        ListaEnlazada<NodoEdificio> rutaTotal = new ListaEnlazada<>();
+        if (colaPreparacion.estaVacia()) {
+            return rutaTotal;
         }
-        NodoEdificio destino = buscarNodoApartamento(colaPreparacion.frente().getApartamento().getCodigo());
-        return mapa.dijkstra(recepcion, destino);
+
+        NodoEdificio actual = buscarNodo("ASEO");
+        if (actual == null) {
+            actual = buscarNodoPorTipo(NodoEdificio.Tipo.RECEPCION);
+        }
+        if (actual == null) {
+            return rutaTotal;
+        }
+        rutaTotal.agregarFinal(actual);
+
+        // El for-each recorre la cola en orden de prioridad sin sacar los elementos
+        for (TareaPreparacion tarea : colaPreparacion) {
+            NodoEdificio destino = buscarNodoApartamento(tarea.getApartamento().getCodigo());
+            if (destino == null) {
+                continue;
+            }
+            ListaEnlazada<NodoEdificio> tramo = mapa.dijkstra(actual, destino);
+            boolean esPrimero = true;
+            for (NodoEdificio nodo : tramo) {
+                if (esPrimero) {
+                    esPrimero = false; // el primer nodo del tramo ya está en la ruta
+                } else {
+                    rutaTotal.agregarFinal(nodo);
+                }
+            }
+            if (!tramo.estaVacia()) {
+                actual = destino;
+            }
+        }
+        return rutaTotal;
     }
 
     public String procesarSiguienteExterna() throws FechasInvalidasException {
@@ -329,6 +367,10 @@ public class SistemaAlojamiento {
 
     public ColaPrioridad<TareaPreparacion> getColaPreparacion() {
         return colaPreparacion;
+    }
+
+    public ListaEnlazada<TareaPreparacion> getPreparacionesTerminadas() {
+        return preparacionesTerminadas;
     }
 
     public Grafo<NodoEdificio> getMapa() {

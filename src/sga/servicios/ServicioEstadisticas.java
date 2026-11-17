@@ -7,6 +7,7 @@ import modelo.EstadoReserva;
 import modelo.MovimientoFolio;
 import modelo.NocheLiquidada;
 import modelo.Reserva;
+import modelo.TareaPreparacion;
 import modelo.TipoTemporada;
 
 import java.time.LocalDate;
@@ -141,6 +142,30 @@ public class ServicioEstadisticas {
         return total;
     }
 
+    // ------------------------------------------------- tiempo de preparación
+
+    /** Cantidad de preparaciones que ya se terminaron. */
+    public int preparacionesTerminadas() {
+        return sistema.getPreparacionesTerminadas().tamano();
+    }
+
+    /**
+     * Promedio, en segundos, entre que el apartamento entra a la cola de aseo
+     * y queda Preparado. Si no hay preparaciones terminadas devuelve 0.
+     */
+    public double tiempoPromedioPreparacionSegundos() {
+        int cantidad = 0;
+        long totalSegundos = 0;
+        for (TareaPreparacion tarea : sistema.getPreparacionesTerminadas()) {
+            totalSegundos += tarea.segundosDePreparacion();
+            cantidad++;
+        }
+        if (cantidad == 0) {
+            return 0;
+        }
+        return (double) totalSegundos / cantidad;
+    }
+
     // ------------------------------------------------------------------ reporte
 
     public String generarReporte() {
@@ -173,6 +198,15 @@ public class ServicioEstadisticas {
         sb.append("\nINGRESOS DEL PERIODO\n");
         sb.append(String.format("  Estimados por noches liquidadas: $%,.0f%n", ingresosEstimados()));
         sb.append(String.format("  Pagos recibidos en folios:       $%,.0f%n", pagosRecibidos()));
+
+        sb.append("\nTIEMPO DE PREPARACION\n");
+        if (preparacionesTerminadas() == 0) {
+            sb.append("  Aun no se ha terminado ninguna preparacion\n");
+        } else {
+            double segundos = tiempoPromedioPreparacionSegundos();
+            sb.append(String.format("  %d preparaciones terminadas, promedio %.0f segundos (%.1f min)%n",
+                    preparacionesTerminadas(), segundos, segundos / 60));
+        }
 
         sb.append("\nCONFLICTOS DE CANAL (").append(sistema.getConflictosCanal().tamano()).append(")\n");
         if (sistema.getConflictosCanal().estaVacia()) {
