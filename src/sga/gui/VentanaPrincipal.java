@@ -248,8 +248,13 @@ public class VentanaPrincipal extends JFrame {
             sb.append(" - ").append(fav).append("\n");
         }
         sb.append("Historial:\n");
-        for (Reserva r : h.getHistorial()) {
-            sb.append(" - ").append(r).append(" saldo folio=").append(r.getFolio().saldo()).append("\n");
+        for (Object item : h.getHistorial()) {
+            if (item instanceof Reserva) {
+                Reserva r = (Reserva) item;
+                sb.append(" - ").append(r).append(" saldo folio=").append(r.getFolio().saldo()).append("\n");
+            } else {
+                sb.append(" - ").append(item).append("\n");
+            }
         }
         areaUsuario.setText(sb.toString());
     }

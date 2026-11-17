@@ -1,13 +1,13 @@
 package servicios;
 
-import sga.comparadores.ComparadorPreparacion;
-import sga.comparadores.ComparadoresApartamento;
-import sga.estructuras.*;
-import sga.excepciones.CapacidadExcedidaException;
-import sga.excepciones.FechasInvalidasException;
-import sga.excepciones.ReservaSolapadaException;
-import sga.excepciones.TransicionEstadoInvalidaException;
-import sga.modelo.*;
+import comparadores.ComparadorPreparacion;
+import comparadores.ComparadoresApartamento;
+import estructuras.*;
+import excepciones.CapacidadExcedidaException;
+import excepciones.FechasInvalidasException;
+import excepciones.ReservaSolapadaException;
+import excepciones.TransicionEstadoInvalidaException;
+import modelo.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -67,7 +67,8 @@ public class SistemaAlojamiento {
     }
 
     public Apartamento buscarApartamento(String codigo) {
-        return apartamentos.buscar(new Apartamento(codigo, "", "", 0, 0, 0, "", 0, 0, 0));
+        return apartamentos.buscar(new Apartamento(codigo, "", "", 0, 0, 0,
+                "", 0.0, EstadoOperativo.PREPARADO, null, null));
     }
 
     public ListaEnlazada<Apartamento> buscarDisponibles(Estancia estancia, int personas, Comparator<Apartamento> orden) {
@@ -128,7 +129,7 @@ public class SistemaAlojamiento {
 
     public double valorDevolucion(Reserva reserva) {
         double pagado = 0;
-        for (sga.modelo.MovimientoFolio movimiento : reserva.getFolio().getMovimientos()) {
+        for (MovimientoFolio movimiento : reserva.getFolio().getMovimientos()) {
             if (movimiento.getValor() < 0) {
                 pagado += -movimiento.getValor();
             }

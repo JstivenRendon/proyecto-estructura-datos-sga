@@ -2,6 +2,9 @@ package modelo;
 
 import java.time.LocalDate;
 
+import estructuras.Conjunto;
+import estructuras.ListaEnlazada;
+
 public class Huesped implements Comparable<Huesped> {
     private final String nombre;
     private final String documento;
@@ -9,6 +12,13 @@ public class Huesped implements Comparable<Huesped> {
     private final String telefono;
     private final String correo;
     private final String rutaFotografia;
+    private final Conjunto<String> favoritos = new Conjunto<>();
+    private final ListaEnlazada<Object> historial = new ListaEnlazada<>();
+
+    public Huesped(String documento, String nombre, LocalDate fechaNacimiento,
+            String telefono, String correo) {
+        this(documento, nombre, fechaNacimiento, telefono, correo, null);
+    }
 
     public Huesped(String nombre, String documento, LocalDate fechaNacimiento,
             String telefono, String correo, String rutaFotografia) {
@@ -44,7 +54,21 @@ public class Huesped implements Comparable<Huesped> {
         return rutaFotografia;
     }
 
-    // TODO Integración Persona A: Conjunto<Apartamento> favoritos y ListaDoblementeEnlazada<Reserva> historial
+    public boolean agregarFavorito(String codigoApartamento) {
+        return favoritos.agregar(codigoApartamento);
+    }
+
+    public void agregarAlHistorial(Object item) {
+        historial.agregarFinal(item);
+    }
+
+    public Conjunto<String> getFavoritos() {
+        return favoritos;
+    }
+
+    public ListaEnlazada<Object> getHistorial() {
+        return historial;
+    }
 
     @Override
     public int compareTo(Huesped otro) {

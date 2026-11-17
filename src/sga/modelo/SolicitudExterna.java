@@ -1,5 +1,9 @@
 package modelo;
 
+import java.time.LocalDate;
+
+import excepciones.FechasInvalidasException;
+
 public class SolicitudExterna {
     private final String plataforma;
     private final String documentoTitular;
@@ -14,6 +18,19 @@ public class SolicitudExterna {
         this.codigoApartamento = codigoApartamento;
         this.estancia = estancia;
         this.personas = personas;
+    }
+
+    public SolicitudExterna(String plataforma, String documentoTitular, String codigoApartamento,
+                            LocalDate fechaEntrada, LocalDate fechaSalida, int personas) {
+        try {
+            this.plataforma = plataforma;
+            this.documentoTitular = documentoTitular;
+            this.codigoApartamento = codigoApartamento;
+            this.estancia = new Estancia(fechaEntrada, fechaSalida);
+            this.personas = personas;
+        } catch (FechasInvalidasException e) {
+            throw new IllegalArgumentException("Fechas inválidas para la solicitud externa", e);
+        }
     }
 
     public String getPlataforma() {

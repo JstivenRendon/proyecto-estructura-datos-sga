@@ -1,5 +1,6 @@
 package modelo;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 import estructuras.ArbolBinarioBusqueda;
@@ -17,6 +18,15 @@ public class Apartamento implements Comparable<Apartamento> {
     private String motivoFueraDeServicio;
     private LocalTime horaLlegadaProgramadaHoy;
     private final ArbolBinarioBusqueda<Reserva> reservas = new ArbolBinarioBusqueda<>();
+
+    public Apartamento(String codigo, String nombre, String bloque, int piso,
+            int numeroDormitorios, int capacidadMaxima, String caracteristicas,
+            double tarifaBasePorPersona, EstadoOperativo estadoOperativo,
+            String motivoFueraDeServicio) {
+        this(codigo, nombre, bloque, piso, numeroDormitorios, capacidadMaxima,
+                caracteristicas, tarifaBasePorPersona, estadoOperativo,
+                motivoFueraDeServicio, null);
+    }
 
     public Apartamento(String codigo, String nombre, String bloque, int piso,
             int numeroDormitorios, int capacidadMaxima, String caracteristicas,
@@ -81,6 +91,88 @@ public class Apartamento implements Comparable<Apartamento> {
 
     public ArbolBinarioBusqueda<Reserva> getReservas() {
         return reservas;
+    }
+
+    public EstadoApartamento getEstado() {
+        switch (estadoOperativo) {
+            case PREPARADO:
+                return EstadoApartamento.PREPARADO;
+            case OCUPADO:
+                return EstadoApartamento.OCUPADO;
+            case PENDIENTE_PREPARACION:
+                return EstadoApartamento.PENDIENTE_PREPARACION;
+            case EN_PREPARACION:
+                return EstadoApartamento.EN_PREPARACION;
+            case FUERA_DE_SERVICIO:
+                return EstadoApartamento.FUERA_DE_SERVICIO;
+            default:
+                return EstadoApartamento.PREPARADO;
+        }
+    }
+
+    public void cambiarEstado(EstadoApartamento nuevoEstado) {
+        switch (nuevoEstado) {
+            case PREPARADO:
+                this.estadoOperativo = EstadoOperativo.PREPARADO;
+                break;
+            case OCUPADO:
+                this.estadoOperativo = EstadoOperativo.OCUPADO;
+                break;
+            case PENDIENTE_PREPARACION:
+                this.estadoOperativo = EstadoOperativo.PENDIENTE_PREPARACION;
+                break;
+            case EN_PREPARACION:
+                this.estadoOperativo = EstadoOperativo.EN_PREPARACION;
+                break;
+            case FUERA_DE_SERVICIO:
+                this.estadoOperativo = EstadoOperativo.FUERA_DE_SERVICIO;
+                break;
+            default:
+                this.estadoOperativo = EstadoOperativo.PREPARADO;
+        }
+    }
+
+    public void agregarReserva(Reserva reserva) {
+        if (reserva != null) {
+            reservas.insertar(reserva);
+        }
+    }
+
+    public boolean haySolapamiento(Estancia estancia) {
+        for (Reserva reserva : reservas) {
+            if (reserva.getEstancia().getFechaEntrada().isBefore(estancia.getFechaSalida())
+                    && estancia.getFechaEntrada().isBefore(reserva.getEstancia().getFechaSalida())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean disponibleEn(Estancia estancia) {
+        return !haySolapamiento(estancia);
+    }
+
+    public double tarifa(TipoTemporada temporada) {
+        if (temporada == null) {
+            return tarifaBasePorPersona;
+        }
+        switch (temporada) {
+            case ALTA:
+                return tarifaBasePorPersona * 1.30;
+            case MEDIA:
+                return tarifaBasePorPersona * 1.15;
+            default:
+                return tarifaBasePorPersona;
+        }
+    }
+
+    public Reserva reservaConEntrada(LocalDate fecha) {
+        for (Reserva reserva : reservas) {
+            if (reserva.getEstancia().getFechaEntrada().equals(fecha)) {
+                return reserva;
+            }
+        }
+        return null;
     }
 
     @Override

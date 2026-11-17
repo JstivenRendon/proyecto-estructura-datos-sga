@@ -140,7 +140,7 @@ public class VentanaRecepcion extends JFrame {
             huesped.append(" - ").append(fav).append("\n");
         }
         huesped.append("Historial:\n");
-        for (String item : huespedDemo.getHistorial()) {
+        for (Object item : huespedDemo.getHistorial()) {
             huesped.append(" - ").append(item).append("\n");
         }
         areaHuesped.setText(huesped.toString());
