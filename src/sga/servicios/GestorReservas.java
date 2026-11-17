@@ -15,7 +15,6 @@ import modelo.EstadoApartamento;
 import modelo.EstadoOperativo;
 import modelo.EstadoReserva;
 import modelo.Estancia;
-import modelo.Folio;
 import modelo.Huesped;
 import modelo.Reserva;
 
@@ -49,6 +48,28 @@ public class GestorReservas {
 
     public ListaEnlazada<Reserva> getReservas() {
         return reservas;
+    }
+
+    public void registrarReservaInicial(Reserva reserva) {
+        if (reserva == null || reserva.getApartamento() == null || reserva.getTitular() == null) {
+            throw new IllegalArgumentException("La reserva inicial debe tener apartamento y huésped");
+        }
+        Apartamento apartamento = catalogoApartamentos.buscar(reserva.getApartamento());
+        Huesped huesped = catalogoHuespedes.buscar(reserva.getTitular());
+        if (apartamento == null || huesped == null
+                || apartamento != reserva.getApartamento() || huesped != reserva.getTitular()) {
+            throw new IllegalArgumentException("El apartamento y el huésped deben estar registrados");
+        }
+        if (reserva.getIdReserva() != null && buscarReservaPorId(reserva.getIdReserva()) != null) {
+            throw new IllegalArgumentException("Ya existe una reserva con ese identificador");
+        }
+
+        apartamento.agregarReserva(reserva);
+        reservas.agregarFinal(reserva);
+        huesped.agregarAlHistorial(reserva);
+        if (reserva.getEstado() == EstadoReserva.PENDIENTE) {
+            reservasPendientes.encolar(reserva);
+        }
     }
 
     public void setCallbackCheckout(Runnable callbackCheckout) {
@@ -262,7 +283,9 @@ public class GestorReservas {
 
     private int contarNoches(Estancia estancia) {
         int contador = 0;
-        for (java.time.LocalDate fecha : estancia) {
+        java.util.Iterator<java.time.LocalDate> noches = estancia.iterator();
+        while (noches.hasNext()) {
+            noches.next();
             contador++;
         }
         return contador;
