@@ -33,6 +33,8 @@ public class SistemaAlojamiento {
     private final ListaCircular<Recepcionista> turnos = new ListaCircular<>();
     private final Grafo<NodoEdificio> mapa = new Grafo<>();
     private final ListaEnlazada<NodoEdificio> nodosMapa = new ListaEnlazada<>();
+    private NodoEdificio pasilloCerradoA;
+    private NodoEdificio pasilloCerradoB;
 
     public SistemaAlojamiento(String nombre) {
         this.nombre = nombre;
@@ -191,13 +193,16 @@ public class SistemaAlojamiento {
         }
         rutaTotal.agregarFinal(actual);
 
+        // Si hay un pasillo cerrado, Dijkstra trabaja sobre el grafo sin ese pasillo
+        Grafo<NodoEdificio> grafo = grafoVigente();
+
         // El for-each recorre la cola en orden de prioridad sin sacar los elementos
         for (TareaPreparacion tarea : colaPreparacion) {
             NodoEdificio destino = buscarNodoApartamento(tarea.getApartamento().getCodigo());
             if (destino == null) {
                 continue;
             }
-            ListaEnlazada<NodoEdificio> tramo = mapa.dijkstra(actual, destino);
+            ListaEnlazada<NodoEdificio> tramo = grafo.dijkstra(actual, destino);
             boolean esPrimero = true;
             for (NodoEdificio nodo : tramo) {
                 if (esPrimero) {
@@ -373,22 +378,47 @@ public class SistemaAlojamiento {
         }
     }
 
-    public boolean pasilloCierraAisla(String idPasilloA, String idPasilloB, String idObjetivo) {
+    /** Cierra un pasillo: desde ahora las rutas de aseo no pasan por él. */
+    public void cerrarPasillo(String idA, String idB) {
+        pasilloCerradoA = buscarNodo(idA);
+        pasilloCerradoB = buscarNodo(idB);
+    }
+
+    /** Vuelve a abrir el pasillo cerrado. */
+    public void abrirPasillo() {
+        pasilloCerradoA = null;
+        pasilloCerradoB = null;
+    }
+
+    /** Grafo que usan las rutas: el mapa completo, o el mapa sin el pasillo cerrado. */
+    private Grafo<NodoEdificio> grafoVigente() {
+        if (pasilloCerradoA == null || pasilloCerradoB == null) {
+            return mapa;
+        }
+        return grafoSinPasillo(pasilloCerradoA, pasilloCerradoB);
+    }
+
+    /** Copia del mapa en la que se omite el pasillo entre a y b. */
+    private Grafo<NodoEdificio> grafoSinPasillo(NodoEdificio a, NodoEdificio b) {
         Grafo<NodoEdificio> reducido = new Grafo<>();
         for (NodoEdificio nodo : nodosMapa) {
             reducido.agregarVertice(nodo);
         }
-        NodoEdificio a = buscarNodo(idPasilloA);
-        NodoEdificio b = buscarNodo(idPasilloB);
         for (NodoEdificio origen : nodosMapa) {
             for (Grafo.Arista<NodoEdificio> arista : mapa.adyacentes(origen)) {
                 boolean esPasilloCerrado = (origen.equals(a) && arista.getDestino().equals(b))
                         || (origen.equals(b) && arista.getDestino().equals(a));
+                // cada pasillo está guardado en los dos sentidos; se copia una sola vez
                 if (!esPasilloCerrado && origen.getId().compareTo(arista.getDestino().getId()) < 0) {
                     reducido.agregarArista(origen, arista.getDestino(), arista.getPeso());
                 }
             }
         }
+        return reducido;
+    }
+
+    public boolean pasilloCierraAisla(String idPasilloA, String idPasilloB, String idObjetivo) {
+        Grafo<NodoEdificio> reducido = grafoSinPasillo(buscarNodo(idPasilloA), buscarNodo(idPasilloB));
         NodoEdificio recepcion = buscarNodoPorTipo(NodoEdificio.Tipo.RECEPCION);
         return !reducido.alcanzable(recepcion, buscarNodo(idObjetivo));
     }

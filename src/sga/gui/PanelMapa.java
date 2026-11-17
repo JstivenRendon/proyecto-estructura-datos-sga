@@ -10,6 +10,7 @@ import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 
 import javax.swing.JPanel;
 
@@ -64,6 +65,7 @@ public class PanelMapa extends JPanel {
     public void cerrarPasillo(NodoEdificio a, NodoEdificio b) {
         cierreA = a;
         cierreB = b;
+        sistema.cerrarPasillo(a.getId(), b.getId());
         inalcanzables.limpiar();
         boolean hayRecepcion = false;
         for (NodoEdificio nodo : sistema.getNodosMapa()) {
@@ -86,6 +88,7 @@ public class PanelMapa extends JPanel {
     public void abrirPasillo() {
         cierreA = null;
         cierreB = null;
+        sistema.abrirPasillo();
         inalcanzables.limpiar();
         repaint();
     }
@@ -121,7 +124,9 @@ public class PanelMapa extends JPanel {
                 if (j <= i) {
                     continue;
                 }
-                dibujarPasillo(g2, nodos[i], nodos[j], pos[0][i], pos[1][i], pos[0][j], pos[1][j], arista.getPeso());
+                double desvio = desvioPasillo(nodos, pos, i, j);
+                dibujarPasillo(g2, nodos[i], nodos[j], pos[0][i], pos[1][i], pos[0][j], pos[1][j],
+                        arista.getPeso(), desvio);
             }
         }
 
@@ -135,8 +140,30 @@ public class PanelMapa extends JPanel {
         g2.dispose();
     }
 
+    /**
+     * Si el pasillo recto i-j pasaría por encima de otro nodo (parecería que cruza por él),
+     * devuelve cuánto hay que curvarlo, hacia el lado contrario a ese nodo. Si no, devuelve 0.
+     */
+    private double desvioPasillo(NodoEdificio[] nodos, double[][] pos, int i, int j) {
+        double x1 = pos[0][i];
+        double y1 = pos[1][i];
+        double x2 = pos[0][j];
+        double y2 = pos[1][j];
+        for (int k = 0; k < nodos.length; k++) {
+            if (k == i || k == j) {
+                continue;
+            }
+            double distancia = Line2D.ptSegDist(x1, y1, x2, y2, pos[0][k], pos[1][k]);
+            if (distancia < RADIO + 6) {
+                double cruz = (x2 - x1) * (pos[1][k] - y1) - (y2 - y1) * (pos[0][k] - x1);
+                return cruz > 0 ? -70 : 70;
+            }
+        }
+        return 0;
+    }
+
     private void dibujarPasillo(Graphics2D g2, NodoEdificio a, NodoEdificio b,
-                                double x1, double y1, double x2, double y2, double peso) {
+                                double x1, double y1, double x2, double y2, double peso, double desvio) {
         boolean cerrado = esPasilloCerrado(a, b);
         boolean enRuta = estaEnRuta(a, b);
         if (cerrado) {
@@ -150,14 +177,34 @@ public class PanelMapa extends JPanel {
             g2.setColor(new Color(150, 150, 150));
             g2.setStroke(new BasicStroke(2f));
         }
-        g2.draw(new Line2D.Double(x1, y1, x2, y2));
+        // punto medio del trazo (donde va la etiqueta); si hay desvío el pasillo se curva
+        double mxLinea = (x1 + x2) / 2;
+        double myLinea = (y1 + y2) / 2;
+        if (desvio == 0) {
+            g2.draw(new Line2D.Double(x1, y1, x2, y2));
+        } else {
+            double largo = Math.max(1, Math.hypot(x2 - x1, y2 - y1));
+            double cx = mxLinea - (y2 - y1) / largo * desvio * 2;
+            double cy = myLinea + (x2 - x1) / largo * desvio * 2;
+            Path2D.Double curva = new Path2D.Double();
+            curva.moveTo(x1, y1);
+            curva.quadTo(cx, cy, x2, y2);
+            g2.draw(curva);
+            mxLinea = 0.25 * x1 + 0.5 * cx + 0.25 * x2;
+            myLinea = 0.25 * y1 + 0.5 * cy + 0.25 * y2;
+        }
         g2.setStroke(new BasicStroke(1f));
 
         String texto = formatoPeso(peso) + (cerrado ? " (cerrado)" : "");
         FontMetrics fm = g2.getFontMetrics();
-        int mx = (int) ((x1 + x2) / 2);
-        int my = (int) ((y1 + y2) / 2);
+        int mx = (int) mxLinea;
+        int my = (int) myLinea;
         int ancho = fm.stringWidth(texto) + 8;
+        // Pasillo vertical corto entre dos nodos de la misma columna: la etiqueta va
+        // al lado para que no quede tapada por los círculos.
+        if (Math.abs(x1 - x2) < 6 && Math.abs(y1 - y2) < 4 * RADIO) {
+            mx += RADIO + ancho / 2 + 4;
+        }
         g2.setColor(Color.WHITE);
         g2.fillRoundRect(mx - ancho / 2, my - 9, ancho, 18, 8, 8);
         g2.setColor(cerrado ? new Color(211, 47, 47) : (enRuta ? new Color(25, 118, 210) : Color.DARK_GRAY));
@@ -293,33 +340,49 @@ public class PanelMapa extends JPanel {
             }
         }
 
-        // BFS desde la raíz: nivel (columna) y padre de cada nodo
+        // Árbol de rutas más cortas (Dijkstra) desde la raíz: la columna de cada nodo
+        // es su profundidad en ese árbol y su padre es el nodo anterior en la ruta.
+        // Así los apartamentos de un mismo bloque quedan juntos aunque exista un
+        // pasillo largo que los una directamente con la recepción.
         int[] padre = new int[n];
         int[] nivel = new int[n];
         for (int i = 0; i < n; i++) {
             padre[i] = -1;
             nivel[i] = -1;
         }
-        int[] cola = new int[n];
-        int ini = 0;
-        int fin = 0;
-        cola[fin++] = raiz;
         nivel[raiz] = 0;
         Grafo<NodoEdificio> mapa = sistema.getMapa();
-        while (ini < fin) {
-            int u = cola[ini++];
-            for (Grafo.Arista<NodoEdificio> arista : mapa.adyacentes(nodos[u])) {
-                int v = indiceDe(nodos, arista.getDestino());
-                if (v >= 0 && nivel[v] < 0) {
-                    nivel[v] = nivel[u] + 1;
-                    padre[v] = u;
-                    cola[fin++] = v;
+        for (int i = 0; i < n; i++) {
+            if (i == raiz) {
+                continue;
+            }
+            ListaEnlazada<NodoEdificio> camino = mapa.dijkstra(nodos[raiz], nodos[i]);
+            if (!camino.estaVacia()) {
+                nivel[i] = camino.tamano() - 1;
+                padre[i] = indiceDe(nodos, camino.obtener(camino.tamano() - 2));
+            }
+        }
+        // Un hijo siempre debe quedar en una columna posterior a la de su padre
+        for (int pasada = 0; pasada < n; pasada++) {
+            for (int i = 0; i < n; i++) {
+                if (padre[i] >= 0 && nivel[i] <= nivel[padre[i]]) {
+                    nivel[i] = nivel[padre[i]] + 1;
                 }
             }
         }
         int maxNivel = 0;
         for (int i = 0; i < n; i++) {
             maxNivel = Math.max(maxNivel, nivel[i]);
+        }
+        // Orden de proceso: columna por columna (los padres antes que sus hijos)
+        int[] cola = new int[n];
+        int fin = 0;
+        for (int columna = 0; columna <= maxNivel; columna++) {
+            for (int i = 0; i < n; i++) {
+                if (nivel[i] == columna) {
+                    cola[fin++] = i;
+                }
+            }
         }
 
         // Hojas de cada subárbol (los hijos se procesan antes que su padre)
