@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 import estructuras.ArbolBinarioBusqueda;
+import excepciones.TransicionEstadoInvalidaException;
 
 public class Apartamento implements Comparable<Apartamento> {
     private final String codigo;
@@ -20,18 +21,18 @@ public class Apartamento implements Comparable<Apartamento> {
     private final ArbolBinarioBusqueda<Reserva> reservas = new ArbolBinarioBusqueda<>();
 
     public Apartamento(String codigo, String nombre, String bloque, int piso,
-            int numeroDormitorios, int capacidadMaxima, String caracteristicas,
-            double tarifaBasePorPersona, EstadoOperativo estadoOperativo,
-            String motivoFueraDeServicio) {
+                       int numeroDormitorios, int capacidadMaxima, String caracteristicas,
+                       double tarifaBasePorPersona, EstadoOperativo estadoOperativo,
+                       String motivoFueraDeServicio) {
         this(codigo, nombre, bloque, piso, numeroDormitorios, capacidadMaxima,
                 caracteristicas, tarifaBasePorPersona, estadoOperativo,
                 motivoFueraDeServicio, null);
     }
 
     public Apartamento(String codigo, String nombre, String bloque, int piso,
-            int numeroDormitorios, int capacidadMaxima, String caracteristicas,
-            double tarifaBasePorPersona, EstadoOperativo estadoOperativo,
-            String motivoFueraDeServicio, LocalTime horaLlegadaProgramadaHoy) {
+                       int numeroDormitorios, int capacidadMaxima, String caracteristicas,
+                       double tarifaBasePorPersona, EstadoOperativo estadoOperativo,
+                       String motivoFueraDeServicio, LocalTime horaLlegadaProgramadaHoy) {
         this.codigo = codigo;
         this.nombre = nombre;
         this.bloque = bloque;
@@ -110,7 +111,17 @@ public class Apartamento implements Comparable<Apartamento> {
         }
     }
 
-    public void cambiarEstado(EstadoApartamento nuevoEstado) {
+    /**
+     * Cambia el estado del apartamento solo si la transición es válida.
+     * Para pasar a Fuera de servicio se usa ponerFueraDeServicio(motivo).
+     */
+    public void cambiarEstado(EstadoApartamento nuevoEstado) throws TransicionEstadoInvalidaException {
+        if (nuevoEstado == EstadoApartamento.FUERA_DE_SERVICIO) {
+            throw new TransicionEstadoInvalidaException(
+                    "Para pasar a Fuera de servicio use ponerFueraDeServicio(motivo)");
+        }
+        validarTransicion(nuevoEstado);
+
         switch (nuevoEstado) {
             case PREPARADO:
                 this.estadoOperativo = EstadoOperativo.PREPARADO;
@@ -124,11 +135,59 @@ public class Apartamento implements Comparable<Apartamento> {
             case EN_PREPARACION:
                 this.estadoOperativo = EstadoOperativo.EN_PREPARACION;
                 break;
+            default:
+                break;
+        }
+        // Si estaba fuera de servicio, ya no hay motivo
+        this.motivoFueraDeServicio = null;
+    }
+
+    /**
+     * Deja el apartamento fuera de servicio. El motivo es obligatorio.
+     */
+    public void ponerFueraDeServicio(String motivo) throws TransicionEstadoInvalidaException {
+        if (motivo == null || motivo.trim().isEmpty()) {
+            throw new TransicionEstadoInvalidaException(
+                    "Debe indicar el motivo para dejar el apartamento fuera de servicio");
+        }
+        validarTransicion(EstadoApartamento.FUERA_DE_SERVICIO);
+        this.estadoOperativo = EstadoOperativo.FUERA_DE_SERVICIO;
+        this.motivoFueraDeServicio = motivo.trim();
+    }
+
+    /**
+     * Revisa si se puede pasar del estado actual al nuevo estado.
+     * Ciclo normal: Preparado -> Ocupado -> Pendiente -> En preparación -> Preparado.
+     */
+    private void validarTransicion(EstadoApartamento nuevo) throws TransicionEstadoInvalidaException {
+        EstadoApartamento actual = getEstado();
+        boolean permitido = false;
+
+        switch (actual) {
+            case PREPARADO:
+                permitido = (nuevo == EstadoApartamento.OCUPADO
+                        || nuevo == EstadoApartamento.FUERA_DE_SERVICIO);
+                break;
+            case OCUPADO:
+                permitido = (nuevo == EstadoApartamento.PENDIENTE_PREPARACION);
+                break;
+            case PENDIENTE_PREPARACION:
+                permitido = (nuevo == EstadoApartamento.EN_PREPARACION
+                        || nuevo == EstadoApartamento.FUERA_DE_SERVICIO);
+                break;
+            case EN_PREPARACION:
+                permitido = (nuevo == EstadoApartamento.PREPARADO);
+                break;
             case FUERA_DE_SERVICIO:
-                this.estadoOperativo = EstadoOperativo.FUERA_DE_SERVICIO;
+                permitido = (nuevo == EstadoApartamento.PENDIENTE_PREPARACION);
                 break;
             default:
-                this.estadoOperativo = EstadoOperativo.PREPARADO;
+                break;
+        }
+
+        if (!permitido) {
+            throw new TransicionEstadoInvalidaException(
+                    "No se puede pasar de " + actual + " a " + nuevo);
         }
     }
 

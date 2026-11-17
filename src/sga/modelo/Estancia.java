@@ -49,4 +49,9 @@ public class Estancia implements Iterable<LocalDate> {
             }
         };
     }
+
+    @Override
+    public String toString() {
+        return fechaEntrada + " a " + fechaSalida;
+    }
 }

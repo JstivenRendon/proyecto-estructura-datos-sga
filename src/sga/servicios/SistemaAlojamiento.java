@@ -26,12 +26,15 @@ public class SistemaAlojamiento {
     private final ListaEnlazada<Temporada> temporadas = new ListaEnlazada<>();
     private final Cola<SolicitudExterna> canalExterno = new Cola<>();
     private final ColaPrioridad<TareaPreparacion> colaPreparacion = new ColaPrioridad<>(ComparadorPreparacion.crear());
+    private final ListaEnlazada<TareaPreparacion> preparacionesTerminadas = new ListaEnlazada<>();
     private final ColaPrioridad<Reserva> pendientesPorVencer = new ColaPrioridad<>(
             Comparator.comparing(Reserva::getVenceEn)
     );
     private final ListaCircular<Recepcionista> turnos = new ListaCircular<>();
     private final Grafo<NodoEdificio> mapa = new Grafo<>();
     private final ListaEnlazada<NodoEdificio> nodosMapa = new ListaEnlazada<>();
+    private NodoEdificio pasilloCerradoA;
+    private NodoEdificio pasilloCerradoB;
 
     public SistemaAlojamiento(String nombre) {
         this.nombre = nombre;
@@ -225,19 +228,64 @@ public class SistemaAlojamiento {
     }
 
     public TareaPreparacion despacharPreparacion() throws TransicionEstadoInvalidaException {
-        TareaPreparacion tarea = colaPreparacion.desencolar();
+        // Si un apartamento quedó fuera de servicio, su tarea de aseo ya no aplica
+        while (!colaPreparacion.estaVacia()
+                && colaPreparacion.frente().getApartamento().getEstado() == EstadoApartamento.FUERA_DE_SERVICIO) {
+            colaPreparacion.desencolar();
+        }
+        // Primero se mira el frente; solo se saca de la cola si el cambio de estado fue válido
+        TareaPreparacion tarea = colaPreparacion.frente();
         tarea.getApartamento().cambiarEstado(EstadoApartamento.EN_PREPARACION);
         tarea.getApartamento().cambiarEstado(EstadoApartamento.PREPARADO);
+        colaPreparacion.desencolar();
+        tarea.terminar();
+        preparacionesTerminadas.agregarFinal(tarea);
         return tarea;
     }
 
+    /**
+     * Ruta de aseo: sale del cuarto de aseo (o de recepción si no hay uno) y
+     * visita los apartamentos pendientes en el orden de la cola de prioridad.
+     * Cada tramo entre dos apartamentos se calcula con Dijkstra.
+     */
     public ListaEnlazada<NodoEdificio> rutaPreparacion() {
-        NodoEdificio recepcion = buscarNodoPorTipo(NodoEdificio.Tipo.RECEPCION);
-        if (recepcion == null || colaPreparacion.estaVacia()) {
-            return new ListaEnlazada<>();
+        ListaEnlazada<NodoEdificio> rutaTotal = new ListaEnlazada<>();
+        if (colaPreparacion.estaVacia()) {
+            return rutaTotal;
         }
-        NodoEdificio destino = buscarNodoApartamento(colaPreparacion.frente().getApartamento().getCodigo());
-        return mapa.dijkstra(recepcion, destino);
+
+        NodoEdificio actual = buscarNodo("ASEO");
+        if (actual == null) {
+            actual = buscarNodoPorTipo(NodoEdificio.Tipo.RECEPCION);
+        }
+        if (actual == null) {
+            return rutaTotal;
+        }
+        rutaTotal.agregarFinal(actual);
+
+        // Si hay un pasillo cerrado, Dijkstra trabaja sobre el grafo sin ese pasillo
+        Grafo<NodoEdificio> grafo = grafoVigente();
+
+        // El for-each recorre la cola en orden de prioridad sin sacar los elementos
+        for (TareaPreparacion tarea : colaPreparacion) {
+            NodoEdificio destino = buscarNodoApartamento(tarea.getApartamento().getCodigo());
+            if (destino == null || tarea.getApartamento().getEstado() == EstadoApartamento.FUERA_DE_SERVICIO) {
+                continue;
+            }
+            ListaEnlazada<NodoEdificio> tramo = grafo.dijkstra(actual, destino);
+            boolean esPrimero = true;
+            for (NodoEdificio nodo : tramo) {
+                if (esPrimero) {
+                    esPrimero = false; // el primer nodo del tramo ya está en la ruta
+                } else {
+                    rutaTotal.agregarFinal(nodo);
+                }
+            }
+            if (!tramo.estaVacia()) {
+                actual = destino;
+            }
+        }
+        return rutaTotal;
     }
 
     public String procesarSiguienteExterna() throws FechasInvalidasException {
@@ -331,22 +379,116 @@ public class SistemaAlojamiento {
         return aptos;
     }
 
-    public boolean pasilloCierraAisla(String idPasilloA, String idPasilloB, String idObjetivo) {
+    /** Suma los pesos (metros) de los pasillos que recorre la ruta. */
+    public double distanciaRuta(ListaEnlazada<NodoEdificio> ruta) {
+        double total = 0;
+        NodoEdificio anterior = null;
+        for (NodoEdificio nodo : ruta) {
+            if (anterior != null) {
+                for (Grafo.Arista<NodoEdificio> arista : mapa.adyacentes(anterior)) {
+                    if (arista.getDestino().equals(nodo)) {
+                        total += arista.getPeso();
+                        break;
+                    }
+                }
+            }
+            anterior = nodo;
+        }
+        return total;
+    }
+
+    /**
+     * Agrupa los apartamentos por bloque usando DFS (recursivo). Se parte de
+     * cada escalera y solo se recorren apartamentos: las demás escaleras y la
+     * recepción no se cruzan, así cada grupo queda dentro de su bloque.
+     */
+    public String reporteBloques() {
+        StringBuilder sb = new StringBuilder("Apartamentos agrupados por bloque (DFS):\n");
+        boolean hayEscaleras = false;
+
+        for (NodoEdificio nodo : nodosMapa) {
+            if (nodo.getTipo() == NodoEdificio.Tipo.SERVICIO && nodo.getId().startsWith("ESC")) {
+                hayEscaleras = true;
+                ListaEnlazada<Apartamento> grupo = new ListaEnlazada<>();
+                Conjunto<NodoEdificio> visitados = new Conjunto<>();
+                visitados.agregar(nodo);
+                dfsBloque(nodo, visitados, grupo);
+
+                if (grupo.estaVacia()) {
+                    sb.append("\n").append(nodo.getId()).append(": sin apartamentos");
+                } else {
+                    sb.append("\nBloque ").append(grupo.obtener(0).getBloque())
+                            .append(" (desde ").append(nodo.getId()).append("): ");
+                    boolean primero = true;
+                    for (Apartamento apto : grupo) {
+                        if (!primero) {
+                            sb.append(", ");
+                        }
+                        sb.append(apto.getCodigo());
+                        primero = false;
+                    }
+                }
+            }
+        }
+        if (!hayEscaleras) {
+            sb.append("\nNo hay escaleras en el mapa");
+        }
+        return sb.toString();
+    }
+
+    private void dfsBloque(NodoEdificio actual, Conjunto<NodoEdificio> visitados,
+                           ListaEnlazada<Apartamento> grupo) {
+        for (Grafo.Arista<NodoEdificio> arista : mapa.adyacentes(actual)) {
+            NodoEdificio vecino = arista.getDestino();
+            if (vecino.getTipo() == NodoEdificio.Tipo.APARTAMENTO && !visitados.contiene(vecino)) {
+                visitados.agregar(vecino);
+                grupo.agregarFinal(vecino.getApartamento());
+                dfsBloque(vecino, visitados, grupo);
+            }
+        }
+    }
+
+    /** Cierra un pasillo: desde ahora las rutas de aseo no pasan por él. */
+    public void cerrarPasillo(String idA, String idB) {
+        pasilloCerradoA = buscarNodo(idA);
+        pasilloCerradoB = buscarNodo(idB);
+    }
+
+    /** Vuelve a abrir el pasillo cerrado. */
+    public void abrirPasillo() {
+        pasilloCerradoA = null;
+        pasilloCerradoB = null;
+    }
+
+    /** Grafo que usan las rutas: el mapa completo, o el mapa sin el pasillo cerrado. */
+    private Grafo<NodoEdificio> grafoVigente() {
+        if (pasilloCerradoA == null || pasilloCerradoB == null) {
+            return mapa;
+        }
+        return grafoSinPasillo(pasilloCerradoA, pasilloCerradoB);
+    }
+
+    /** Copia del mapa en la que se omite el pasillo entre a y b. */
+    private Grafo<NodoEdificio> grafoSinPasillo(NodoEdificio a, NodoEdificio b) {
         Grafo<NodoEdificio> reducido = new Grafo<>();
         for (NodoEdificio nodo : nodosMapa) {
             reducido.agregarVertice(nodo);
         }
-        NodoEdificio a = buscarNodo(idPasilloA);
-        NodoEdificio b = buscarNodo(idPasilloB);
         for (NodoEdificio origen : nodosMapa) {
             for (Grafo.Arista<NodoEdificio> arista : mapa.adyacentes(origen)) {
                 boolean esPasilloCerrado = (origen.equals(a) && arista.getDestino().equals(b))
                         || (origen.equals(b) && arista.getDestino().equals(a));
+                // cada pasillo está guardado en los dos sentidos; se copia una sola vez
                 if (!esPasilloCerrado && origen.getId().compareTo(arista.getDestino().getId()) < 0) {
                     reducido.agregarArista(origen, arista.getDestino(), arista.getPeso());
                 }
             }
         }
+        return reducido;
+    }
+
+    public boolean pasilloCierraAisla(String idPasilloA, String idPasilloB, String idObjetivo) {
+        Grafo<NodoEdificio> reducido = grafoSinPasillo(buscarNodo(idPasilloA), buscarNodo(idPasilloB));
         NodoEdificio recepcion = buscarNodoPorTipo(NodoEdificio.Tipo.RECEPCION);
         return !reducido.alcanzable(recepcion, buscarNodo(idObjetivo));
     }
@@ -406,6 +548,10 @@ public class SistemaAlojamiento {
 
     public ColaPrioridad<TareaPreparacion> getColaPreparacion() {
         return colaPreparacion;
+    }
+
+    public ListaEnlazada<TareaPreparacion> getPreparacionesTerminadas() {
+        return preparacionesTerminadas;
     }
 
     public Grafo<NodoEdificio> getMapa() {

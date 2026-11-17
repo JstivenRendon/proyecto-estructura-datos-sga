@@ -16,12 +16,16 @@ public class Huesped implements Comparable<Huesped> {
     private final ListaEnlazada<Object> historial = new ListaEnlazada<>();
 
     public Huesped(String documento, String nombre, LocalDate fechaNacimiento,
+<<<<<<< HEAD
             String telefono, String correo) {
+=======
+                   String telefono, String correo) {
+>>>>>>> 7f1e4c7548c8235d08257629e491207f1dc66d2a
         this(nombre, documento, fechaNacimiento, telefono, correo, null);
     }
 
     public Huesped(String nombre, String documento, LocalDate fechaNacimiento,
-            String telefono, String correo, String rutaFotografia) {
+                   String telefono, String correo, String rutaFotografia) {
         this.nombre = nombre;
         this.documento = documento;
         this.fechaNacimiento = fechaNacimiento;
@@ -73,5 +77,10 @@ public class Huesped implements Comparable<Huesped> {
     @Override
     public int compareTo(Huesped otro) {
         return documento.compareTo(otro.documento);
+    }
+
+    @Override
+    public String toString() {
+        return nombre + " (" + documento + ")";
     }
 }
