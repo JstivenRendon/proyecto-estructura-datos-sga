@@ -1,6 +1,7 @@
 package estructuras;
 
 import java.util.Comparator;
+import java.util.NoSuchElementException;
 
 public class ColaPrioridadEnlazada<T> implements ColaPrioridadContrato<T> {
     private static class Nodo<T> {
@@ -45,7 +46,7 @@ public class ColaPrioridadEnlazada<T> implements ColaPrioridadContrato<T> {
     @Override
     public T desencolar() {
         if (estaVacia()) {
-            throw new EstructuraVaciaException("La cola de prioridad está vacía");
+            throw new NoSuchElementException("La cola de prioridad está vacía");
         }
         T dato = frente.dato;
         frente = frente.siguiente;
@@ -55,7 +56,7 @@ public class ColaPrioridadEnlazada<T> implements ColaPrioridadContrato<T> {
     @Override
     public T verPrimero() {
         if (estaVacia()) {
-            throw new EstructuraVaciaException("La cola de prioridad está vacía");
+            throw new NoSuchElementException("La cola de prioridad está vacía");
         }
         return frente.dato;
     }

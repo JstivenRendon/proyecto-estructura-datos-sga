@@ -78,7 +78,7 @@ public class GestorReservas {
 
     public Reserva crearReserva(String documento, String codigoApartamento, Estancia estancia, CanalReserva canal)
             throws ReservaSolapadaException, CapacidadExcedidaException, TransicionEstadoInvalidaException {
-        return crearReserva(documento, codigoApartamento, estancia, canal, null);
+        return crearReserva(documento, codigoApartamento, estancia, canal, (java.time.LocalDate[]) null);
     }
 
     public Reserva crearReserva(String documento, String codigoApartamento, Estancia estancia, CanalReserva canal,

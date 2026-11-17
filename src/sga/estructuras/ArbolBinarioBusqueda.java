@@ -190,14 +190,14 @@ public class ArbolBinarioBusqueda<T extends Comparable<T>> implements Iterable<T
         return raiz == null;
     }
 
-    public boolean existeSolapamiento(Estancia nuevaEstancia) {
+    public boolean existeSolapamiento(modelo.Estancia nuevaEstancia) {
         if (nuevaEstancia == null || raiz == null) {
             return false;
         }
         return existeSolapamientoRecursivo(raiz, nuevaEstancia);
     }
 
-    private boolean existeSolapamientoRecursivo(NodoBST<T> actual, Estancia nuevaEstancia) {
+    private boolean existeSolapamientoRecursivo(NodoBST<T> actual, modelo.Estancia nuevaEstancia) {
         if (actual == null) {
             return false;
         }

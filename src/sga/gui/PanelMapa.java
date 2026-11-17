@@ -10,7 +10,7 @@ import servicios.SistemaAlojamiento;
 
 public class PanelMapa extends JPanel {
     private final SistemaAlojamiento sistema;
-    private ListaEnlazada<Object> ruta = new ListaEnlazada<>();
+    private ListaEnlazada<?> ruta = new ListaEnlazada<>();
 
     public PanelMapa(SistemaAlojamiento sistema) {
         this.sistema = sistema;
@@ -18,7 +18,7 @@ public class PanelMapa extends JPanel {
     }
 
     public void setRuta(ListaEnlazada<?> ruta) {
-        this.ruta = (ListaEnlazada<Object>) ruta;
+        this.ruta = ruta;
         repaint();
     }
 

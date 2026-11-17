@@ -2,6 +2,7 @@ package servicios;
 
 import java.time.LocalDate;
 
+import modelo.Apartamento;
 import modelo.RangoTemporada;
 import modelo.Temporada;
 import modelo.TipoTemporada;
