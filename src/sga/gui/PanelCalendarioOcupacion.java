@@ -1,4 +1,4 @@
-package gui.Demo;
+package gui;
 
 import estructuras.ArbolBinarioBusqueda;
 import modelo.Apartamento;
@@ -6,7 +6,7 @@ import modelo.EstadoOperativo;
 import modelo.EstadoReserva;
 import modelo.Huesped;
 import modelo.Reserva;
-import servicios.GestorReservas;
+import servicios.SistemaAlojamiento;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -31,7 +31,7 @@ import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
-public class PanelCalendarioOcupacion extends JPanel implements CambioReservasListener {
+public class PanelCalendarioOcupacion extends JPanel implements CambioReservasListener, EscuchaCambios {
     private static final String[] MESES = {
         "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
@@ -41,7 +41,7 @@ public class PanelCalendarioOcupacion extends JPanel implements CambioReservasLi
     private static final Color COLOR_PENDIENTE = new Color(255, 218, 126);
     private static final Color COLOR_BLOQUEADO = new Color(239, 151, 151);
 
-    private final GestorReservas gestorReservas;
+    private SistemaAlojamiento sistema;
     private final JComboBox<String> selectorMes = new JComboBox<>(MESES);
     private final JSpinner selectorAnio = new JSpinner(
             new SpinnerNumberModel(LocalDate.now().getYear(), 1900, 9999, 1));
@@ -53,18 +53,31 @@ public class PanelCalendarioOcupacion extends JPanel implements CambioReservasLi
     private int filaInspeccionada = -1;
     private int diaInspeccionado = -1;
 
-    public PanelCalendarioOcupacion(GestorReservas gestorReservas) {
-        if (gestorReservas == null) {
-            throw new IllegalArgumentException("El gestor de reservas no puede ser null");
+    public PanelCalendarioOcupacion(SistemaAlojamiento sistema) {
+        if (sistema == null) {
+            throw new IllegalArgumentException("El sistema de alojamiento no puede ser null");
         }
-        this.gestorReservas = gestorReservas;
+        this.sistema = sistema;
         construirInterfaz();
         selectorMes.setSelectedIndex(mesMostrado.getMonthValue() - 1);
         refrescarCalendario();
     }
 
+    public void setSistema(SistemaAlojamiento sistema) {
+        if (sistema == null) {
+            throw new IllegalArgumentException("El sistema de alojamiento no puede ser null");
+        }
+        this.sistema = sistema;
+        refrescarCalendario();
+    }
+
     @Override
     public void reservasCambiaron() {
+        refrescarCalendario();
+    }
+
+    @Override
+    public void alCambiar() {
         refrescarCalendario();
     }
 
@@ -157,7 +170,7 @@ public class PanelCalendarioOcupacion extends JPanel implements CambioReservasLi
     }
 
     private void cargarFilasYColumnas() {
-        ArbolBinarioBusqueda<Apartamento> catalogo = gestorReservas.getCatalogoApartamentos();
+        ArbolBinarioBusqueda<Apartamento> catalogo = sistema.getApartamentos();
         apartamentos = new Apartamento[catalogo.contarElementos()];
         int fila = 0;
         for (Apartamento apartamento : catalogo) {

@@ -45,6 +45,31 @@ public class SistemaAlojamiento {
         huespedes.insertar(huesped);
     }
 
+    public void registrarReservaInicial(Reserva reserva) throws ReservaSolapadaException {
+        if (reserva == null || reserva.getApartamento() == null || reserva.getTitular() == null
+                || reserva.getEstancia() == null) {
+            throw new IllegalArgumentException("La reserva inicial debe tener apartamento, huésped y estancia");
+        }
+        Apartamento apartamento = buscarApartamento(reserva.getApartamento().getCodigo());
+        Huesped huesped = buscarHuesped(reserva.getTitular().getDocumento());
+        if (apartamento != reserva.getApartamento() || huesped != reserva.getTitular()) {
+            throw new IllegalArgumentException("El apartamento y el huésped deben estar registrados");
+        }
+        if (reserva.getIdReserva() == null || buscarReservaPorId(reserva.getIdReserva()) != null) {
+            throw new IllegalArgumentException("La reserva debe tener un identificador único");
+        }
+        if (apartamento.existeSolapamiento(reserva.getEstancia())) {
+            throw new ReservaSolapadaException("La reserva inicial se solapa con una reserva activa");
+        }
+
+        apartamento.agregarReserva(reserva);
+        reservas.agregarFinal(reserva);
+        huesped.agregarAlHistorial(reserva);
+        if (reserva.getEstado() == EstadoReserva.PENDIENTE) {
+            pendientesPorVencer.encolar(reserva);
+        }
+    }
+
     public void registrarRecepcionista(Recepcionista recepcionista) {
         turnos.agregar(recepcionista);
     }
@@ -72,6 +97,12 @@ public class SistemaAlojamiento {
     }
 
     public ListaEnlazada<Apartamento> buscarDisponibles(Estancia estancia, int personas, Comparator<Apartamento> orden) {
+        if (estancia == null) {
+            throw new IllegalArgumentException("La estancia no puede ser null");
+        }
+        if (personas < 1) {
+            throw new IllegalArgumentException("La cantidad de personas debe ser mayor que cero");
+        }
         ListaEnlazada<Apartamento> resultado = new ListaEnlazada<>();
         for (Apartamento apto : apartamentos) {
             if (apto.getCapacidadMaxima() >= personas && apto.disponibleEn(estancia)
@@ -106,23 +137,50 @@ public class SistemaAlojamiento {
 
     public Reserva crearReserva(String documento, String codigoApartamento, Estancia estancia, CanalReserva canal)
             throws ReservaSolapadaException, CapacidadExcedidaException, TransicionEstadoInvalidaException {
+        return crearReserva(documento, codigoApartamento, estancia, canal, 1);
+    }
+
+    public Reserva crearReserva(String documento, String codigoApartamento, Estancia estancia, CanalReserva canal,
+            int cantidadOcupantes)
+            throws ReservaSolapadaException, CapacidadExcedidaException, TransicionEstadoInvalidaException {
+        if (estancia == null || canal == null) {
+            throw new IllegalArgumentException("La estancia y el canal son obligatorios");
+        }
+        if (cantidadOcupantes < 1) {
+            throw new IllegalArgumentException("La cantidad de ocupantes debe ser mayor que cero");
+        }
         Huesped huesped = buscarHuesped(documento);
         Apartamento apartamento = buscarApartamento(codigoApartamento);
         if (huesped == null || apartamento == null) {
             throw new IllegalArgumentException("Huésped o apartamento no encontrado");
         }
-        Reserva reserva = new Reserva(huesped, apartamento, estancia, canal);
-        apartamento.agregarReserva(reserva);
-        reservas.agregarFinal(reserva);
-        huesped.agregarAlHistorial(reserva);
-        if (reserva.getEstado() == EstadoReserva.PENDIENTE) {
-            pendientesPorVencer.encolar(reserva);
+        if (apartamento.getCapacidadMaxima() < cantidadOcupantes) {
+            throw new CapacidadExcedidaException("La cantidad de ocupantes excede la capacidad del apartamento");
         }
+        if (apartamento.getEstadoOperativo() == EstadoOperativo.FUERA_DE_SERVICIO) {
+            throw new TransicionEstadoInvalidaException("El apartamento está fuera de servicio");
+        }
+        if (!apartamento.disponibleEn(estancia)) {
+            throw new ReservaSolapadaException("El apartamento ya tiene reservas activas para esas fechas");
+        }
+
+        EstadoReserva estadoInicial = canal == CanalReserva.PORTAL
+                ? EstadoReserva.PENDIENTE
+                : EstadoReserva.CONFIRMADA;
+        Reserva reserva = new Reserva(generarIdReserva(), huesped, apartamento, estancia, canal,
+                estadoInicial, LocalDateTime.now(), cantidadOcupantes);
+        registrarReservaInicial(reserva);
         return reserva;
     }
 
     public void pagarAnticipo(Reserva reserva, double valorEstancia)
             throws TransicionEstadoInvalidaException {
+        if (reserva == null) {
+            throw new IllegalArgumentException("La reserva no puede ser null");
+        }
+        if (reserva.getEstado() != EstadoReserva.PENDIENTE) {
+            throw new TransicionEstadoInvalidaException("Solo se puede pagar el anticipo de una reserva pendiente");
+        }
         reserva.getFolio().registrarPago("Anticipo 30%", valorEstancia * 0.30);
         reserva.transicionarA(EstadoReserva.CONFIRMADA);
     }
@@ -138,6 +196,13 @@ public class SistemaAlojamiento {
     }
 
     public void cancelar(Reserva reserva) throws TransicionEstadoInvalidaException {
+        if (reserva == null) {
+            throw new IllegalArgumentException("La reserva no puede ser null");
+        }
+        if (reserva.getEstado() != EstadoReserva.PENDIENTE
+                && reserva.getEstado() != EstadoReserva.CONFIRMADA) {
+            throw new TransicionEstadoInvalidaException("Solo se pueden cancelar reservas pendientes o confirmadas");
+        }
         reserva.transicionarA(EstadoReserva.CANCELADA);
     }
 
@@ -188,7 +253,7 @@ public class SistemaAlojamiento {
         }
         try {
             Reserva reserva = crearReserva(solicitud.getDocumentoTitular(), solicitud.getCodigoApartamento(),
-                    solicitud.getEstancia(), CanalReserva.EXTERNA);
+                    solicitud.getEstancia(), CanalReserva.EXTERNA, solicitud.getPersonas());
             return "Solicitud aceptada: " + reserva;
         } catch (Exception e) {
             String conflicto = "Conflicto canal externo: " + e.getMessage();
@@ -319,6 +384,18 @@ public class SistemaAlojamiento {
         return reservas;
     }
 
+    public Reserva buscarReservaPorId(String idReserva) {
+        if (idReserva == null) {
+            return null;
+        }
+        for (Reserva reserva : reservas) {
+            if (idReserva.equals(reserva.getIdReserva())) {
+                return reserva;
+            }
+        }
+        return null;
+    }
+
     public ListaEnlazada<String> getConflictosCanal() {
         return conflictosCanal;
     }
@@ -341,6 +418,16 @@ public class SistemaAlojamiento {
 
     public ListaCircular<Recepcionista> getTurnos() {
         return turnos;
+    }
+
+    private String generarIdReserva() {
+        int consecutivo = reservas.tamano() + 1;
+        String id;
+        do {
+            id = "RES-" + consecutivo;
+            consecutivo++;
+        } while (buscarReservaPorId(id) != null);
+        return id;
     }
 
     private NodoEdificio buscarNodo(String id) {
@@ -371,6 +458,10 @@ public class SistemaAlojamiento {
     }
 
     private void insertarOrdenado(ListaEnlazada<Apartamento> lista, Apartamento apto, Comparator<Apartamento> orden) {
+        if (orden == null) {
+            lista.agregarFinal(apto);
+            return;
+        }
         ListaEnlazada<Apartamento> temporal = new ListaEnlazada<>();
         boolean puesto = false;
         for (Apartamento actual : lista) {

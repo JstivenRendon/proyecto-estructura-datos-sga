@@ -18,7 +18,9 @@ public class Reserva implements Comparable<Reserva> {
     private final Folio folio = new Folio();
 
     public Reserva(Huesped titular, Apartamento apartamento, Estancia estancia, CanalReserva canal) {
-        this(null, titular, apartamento, estancia, canal, EstadoReserva.PENDIENTE, LocalDateTime.now(), 1);
+        this(null, titular, apartamento, estancia, canal,
+                canal == CanalReserva.PORTAL ? EstadoReserva.PENDIENTE : EstadoReserva.CONFIRMADA,
+                LocalDateTime.now(), 1);
     }
 
     public Reserva(String idReserva, Huesped titular, Apartamento apartamento,
@@ -111,7 +113,14 @@ public class Reserva implements Comparable<Reserva> {
 
     @Override
     public int compareTo(Reserva otra) {
-        return estancia.getFechaEntrada().compareTo(otra.estancia.getFechaEntrada());
+        int comparacionFecha = estancia.getFechaEntrada().compareTo(otra.estancia.getFechaEntrada());
+        if (comparacionFecha != 0) {
+            return comparacionFecha;
+        }
+        if (idReserva == null) {
+            return otra.idReserva == null ? 0 : -1;
+        }
+        return otra.idReserva == null ? 1 : idReserva.compareTo(otra.idReserva);
     }
 
     @Override

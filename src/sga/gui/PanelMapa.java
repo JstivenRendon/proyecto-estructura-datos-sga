@@ -25,7 +25,7 @@ import servicios.SistemaAlojamiento;
  * simular el cierre de un pasillo con un clic para ver qué apartamentos
  * quedan inalcanzables desde la recepción.
  */
-public class PanelMapa extends JPanel {
+public class PanelMapa extends JPanel implements EscuchaCambios {
     private static final int RADIO = 26;
     private static final int ALTO_BARRA = 70;
     private static final double TOLERANCIA_CLIC = 8;
@@ -57,6 +57,11 @@ public class PanelMapa extends JPanel {
     /** Define la ruta (lista de nodos) que se resalta en azul. */
     public void setRuta(ListaEnlazada<?> ruta) {
         this.ruta = ruta == null ? new ListaEnlazada<>() : ruta;
+        repaint();
+    }
+
+    @Override
+    public void alCambiar() {
         repaint();
     }
 

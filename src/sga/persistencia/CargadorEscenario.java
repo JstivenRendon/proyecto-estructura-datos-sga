@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import excepciones.FechasInvalidasException;
+import excepciones.ReservaSolapadaException;
 import modelo.Apartamento;
 import modelo.CanalReserva;
 import modelo.EstadoOperativo;
@@ -103,7 +105,7 @@ public final class CargadorEscenario {
 
         // ----------------------------------------------------------------- reservas
         reservar(sistema, "RES-100", h1, a101, hoy.plusDays(2), hoy.plusDays(5),
-                CanalReserva.DIRECTA, EstadoReserva.PENDIENTE, 2);
+                CanalReserva.PORTAL, EstadoReserva.PENDIENTE, 2);
         reservar(sistema, "RES-101", h2, a102, hoy.minusDays(1), hoy.plusDays(2),
                 CanalReserva.PORTAL, EstadoReserva.EN_CURSO, 2);
         reservar(sistema, "RES-102", h3, b202, hoy, hoy.plusDays(3),
@@ -127,10 +129,9 @@ public final class CargadorEscenario {
         try {
             Estancia estancia = new Estancia(entrada, salida);
             Reserva reserva = new Reserva(id, titular, apto, estancia, canal, estado, LocalDateTime.now(), personas);
-            apto.agregarReserva(reserva);
-            sistema.getReservas().agregarFinal(reserva);
-        } catch (Exception ignorada) {
-            // Si una reserva de prueba no es válida, se omite y el resto del escenario se carga igual.
+            sistema.registrarReservaInicial(reserva);
+        } catch (FechasInvalidasException | ReservaSolapadaException error) {
+            throw new IllegalStateException("No se pudo cargar la reserva inicial " + id, error);
         }
     }
 }

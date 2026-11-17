@@ -17,7 +17,7 @@ public class Huesped implements Comparable<Huesped> {
 
     public Huesped(String documento, String nombre, LocalDate fechaNacimiento,
             String telefono, String correo) {
-        this(documento, nombre, fechaNacimiento, telefono, correo, null);
+        this(nombre, documento, fechaNacimiento, telefono, correo, null);
     }
 
     public Huesped(String nombre, String documento, LocalDate fechaNacimiento,

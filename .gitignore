@@ -28,5 +28,7 @@ replay_pid*
 out/
 
 # Visual Studio Code
-.vscode/
+.vscode/*
+!.vscode/launch.json
+!.vscode/settings.json
 bin/

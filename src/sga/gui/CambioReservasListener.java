@@ -1,4 +1,4 @@
-package gui.Demo;
+package gui;
 
 public interface CambioReservasListener {
     void reservasCambiaron();

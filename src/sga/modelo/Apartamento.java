@@ -147,13 +147,7 @@ public class Apartamento implements Comparable<Apartamento> {
     }
 
     public boolean haySolapamiento(Estancia estancia) {
-        for (Reserva reserva : reservas) {
-            if (reserva.getEstancia().getFechaEntrada().isBefore(estancia.getFechaSalida())
-                    && estancia.getFechaEntrada().isBefore(reserva.getEstancia().getFechaSalida())) {
-                return true;
-            }
-        }
-        return false;
+        return existeSolapamiento(estancia);
     }
 
     public boolean disponibleEn(Estancia estancia) {
@@ -176,7 +170,10 @@ public class Apartamento implements Comparable<Apartamento> {
 
     public Reserva reservaConEntrada(LocalDate fecha) {
         for (Reserva reserva : reservas) {
-            if (reserva.getEstancia().getFechaEntrada().equals(fecha)) {
+            if (reserva.getEstancia().getFechaEntrada().equals(fecha)
+                    && reserva.getEstado() != EstadoReserva.CANCELADA
+                    && reserva.getEstado() != EstadoReserva.NO_SHOW
+                    && reserva.getEstado() != EstadoReserva.FINALIZADA) {
                 return reserva;
             }
         }

@@ -205,18 +205,15 @@ public class ArbolBinarioBusqueda<T extends Comparable<T>> implements Iterable<T
             return false;
         }
         modelo.Reserva reservaActual = (modelo.Reserva) actual.dato;
-        if (reservaActual.getEstado() == modelo.EstadoReserva.CANCELADA
-                || reservaActual.getEstado() == modelo.EstadoReserva.NO_SHOW
-                || reservaActual.getEstado() == modelo.EstadoReserva.FINALIZADA) {
-            return existeSolapamientoRecursivo(actual.izquierdo, nuevaEstancia)
-                    || existeSolapamientoRecursivo(actual.derecho, nuevaEstancia);
-        }
-        if (nuevaEstancia.getFechaEntrada().isBefore(reservaActual.getEstancia().getFechaSalida())
-                && reservaActual.getEstancia().getFechaEntrada().isBefore(nuevaEstancia.getFechaSalida())) {
-            return true;
-        }
-        if (reservaActual.getEstancia().getFechaEntrada().compareTo(nuevaEstancia.getFechaSalida()) >= 0) {
+        if (!reservaActual.getEstancia().getFechaEntrada().isBefore(nuevaEstancia.getFechaSalida())) {
             return existeSolapamientoRecursivo(actual.izquierdo, nuevaEstancia);
+        }
+        boolean reservaActiva = reservaActual.getEstado() != modelo.EstadoReserva.CANCELADA
+                && reservaActual.getEstado() != modelo.EstadoReserva.NO_SHOW
+                && reservaActual.getEstado() != modelo.EstadoReserva.FINALIZADA;
+        if (reservaActiva
+                && nuevaEstancia.getFechaEntrada().isBefore(reservaActual.getEstancia().getFechaSalida())) {
+            return true;
         }
         if (existeSolapamientoRecursivo(actual.izquierdo, nuevaEstancia)) {
             return true;
