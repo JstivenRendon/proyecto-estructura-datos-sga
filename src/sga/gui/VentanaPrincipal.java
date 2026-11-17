@@ -25,20 +25,23 @@ public class VentanaPrincipal extends JFrame {
     private SistemaAlojamiento sistema;
     private final BusEventos busEventos = new BusEventos();
     private final JPanel tablero = new JPanel(new GridLayout(0, 2, 8, 8));
+    private final JTextArea areaReservas = new JTextArea();
+    private final JTextArea areaUsuario = new JTextArea();
+    private final JTextArea areaCalendario = new JTextArea();
     private final JTextArea areaEstadisticas = new JTextArea();
     private final DefaultListModel<String> modeloPreparacion = new DefaultListModel<>();
-<<<<<<< HEAD
+
     private PanelReservas panelReservas;
     private PanelCalendarioOcupacion panelCalendario;
     private VentanaRecepcion panelRecepcion;
-=======
+
     private final JTextArea areaRuta = new JTextArea(3, 40);
->>>>>>> 7f1e4c7548c8235d08257629e491207f1dc66d2a
+
     private PanelMapa panelMapa;
 
     public VentanaPrincipal() {
         super("SGA — Aparta-Suites UQ");
-<<<<<<< HEAD
+
         EstiloSGA.aplicarTema();
         sistema = CargadorEscenario.cargar();
         panelReservas = new PanelReservas(sistema);
@@ -52,9 +55,9 @@ public class VentanaPrincipal extends JFrame {
         panelReservas.setCambioReservasListener(this::notificarCambios);
         panelRecepcion.setCambioReservasListener(this::notificarCambios);
 
-=======
+
         this.sistema = leerEscenarioInicial();
->>>>>>> 7f1e4c7548c8235d08257629e491207f1dc66d2a
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(980, 680));
         setSize(1240, 800);
@@ -90,9 +93,9 @@ public class VentanaPrincipal extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         JLabel titulo = new JLabel("Tablero de apartamentos — " + sistema.getNombre(), SwingConstants.CENTER);
         titulo.setFont(new Font("SansSerif", Font.BOLD, 18));
-<<<<<<< HEAD
-        JButton cargar = new JButton("Restablecer datos iniciales");
-        cargar.addActionListener(e -> {
+
+        JButton restablecer = new JButton("Restablecer datos iniciales");
+        restablecer.addActionListener(e -> {
             sistema = CargadorEscenario.cargar();
             panelReservas.setSistema(sistema);
             panelCalendario.setSistema(sistema);
@@ -100,22 +103,29 @@ public class VentanaPrincipal extends JFrame {
             panelMapa.setSistema(sistema);
             busEventos.notificar();
             refrescarTodo();
-=======
+        });
+
         JButton cargar = new JButton("Cargar escenario de prueba (" + ARCHIVO_ESCENARIO + ")");
         cargar.addActionListener(e -> {
             try {
                 sistema = LectorEscenario.cargar(ARCHIVO_ESCENARIO);
+                panelReservas.setSistema(sistema);
+                panelCalendario.setSistema(sistema);
+                panelRecepcion.setSistema(sistema);
                 panelMapa.setSistema(sistema);
+                busEventos.notificar();
                 refrescarTodo();
                 areaRuta.setText("");
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "No se pudo cargar el escenario:\n" + ex.getMessage());
             }
-
         });
         panel.add(titulo, BorderLayout.NORTH);
         panel.add(new JScrollPane(tablero), BorderLayout.CENTER);
-        panel.add(cargar, BorderLayout.SOUTH);
+        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        acciones.add(restablecer);
+        acciones.add(cargar);
+        panel.add(acciones, BorderLayout.SOUTH);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         return panel;
     }
@@ -266,7 +276,7 @@ public class VentanaPrincipal extends JFrame {
         return panel;
     }
 
->>>>>>> 7f1e4c7548c8235d08257629e491207f1dc66d2a
+
     private JPanel crearPreparacion() {
         JPanel panel = new JPanel(new BorderLayout());
         JList<String> lista = new JList<>(modeloPreparacion);
@@ -277,13 +287,12 @@ public class VentanaPrincipal extends JFrame {
             try {
                 TareaPreparacion t = sistema.despacharPreparacion();
                 JOptionPane.showMessageDialog(this, "Preparado: " + t.getApartamento().getCodigo());
-<<<<<<< HEAD
                 notificarCambios();
-=======
+
                 refrescarTodo();
                 areaRuta.setText("");
                 panelMapa.setRuta(null);
->>>>>>> 7f1e4c7548c8235d08257629e491207f1dc66d2a
+
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage());
             }
@@ -336,8 +345,6 @@ public class VentanaPrincipal extends JFrame {
         return panel;
     }
 
-<<<<<<< HEAD
-=======
     private void buscarDisponibles(String entrada, String salida, String personasTxt, String criterio) {
         try {
             Estancia estancia = new Estancia(LocalDate.parse(entrada.trim()), LocalDate.parse(salida.trim()));
