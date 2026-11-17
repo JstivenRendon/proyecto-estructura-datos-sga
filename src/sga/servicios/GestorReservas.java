@@ -76,7 +76,7 @@ public class GestorReservas {
     }
 
     public ListaEnlazada<Apartamento> buscarDisponibles(Estancia estancia, int cantidadPersonas,
-            java.util.Comparator<Apartamento> criterioOrden) {
+                                                        java.util.Comparator<Apartamento> criterioOrden) {
         ListaEnlazada<Apartamento> resultado = new ListaEnlazada<>();
         if (estancia == null) {
             return resultado;
@@ -102,21 +102,21 @@ public class GestorReservas {
     }
 
     public Reserva crearReserva(String documento, String codigoApartamento, Estancia estancia, CanalReserva canal,
-            java.time.LocalDate[] fechasNacimientoOcupantes)
+                                java.time.LocalDate[] fechasNacimientoOcupantes)
             throws ReservaSolapadaException, CapacidadExcedidaException, TransicionEstadoInvalidaException {
         int cantidadOcupantes = fechasNacimientoOcupantes == null ? 1 : fechasNacimientoOcupantes.length;
         return crearReservaInterna(documento, codigoApartamento, estancia, canal, cantidadOcupantes);
     }
 
     public Reserva crearReserva(String documento, String codigoApartamento, Estancia estancia, CanalReserva canal,
-            LocalDateTime[] fechasNacimientoOcupantes)
+                                LocalDateTime[] fechasNacimientoOcupantes)
             throws ReservaSolapadaException, CapacidadExcedidaException, TransicionEstadoInvalidaException {
         int cantidadOcupantes = fechasNacimientoOcupantes == null ? 1 : fechasNacimientoOcupantes.length;
         return crearReservaInterna(documento, codigoApartamento, estancia, canal, cantidadOcupantes);
     }
 
     private Reserva crearReservaInterna(String documento, String codigoApartamento, Estancia estancia, CanalReserva canal,
-            int cantidadOcupantes)
+                                        int cantidadOcupantes)
             throws ReservaSolapadaException, CapacidadExcedidaException, TransicionEstadoInvalidaException {
         Huesped huesped = catalogoHuespedes.buscar(new Huesped(documento, "", null, "", ""));
         Apartamento apartamento = catalogoApartamentos.buscar(new Apartamento(codigoApartamento, "", "", 0, 0, 0,
@@ -257,7 +257,7 @@ public class GestorReservas {
     }
 
     private void insertarOrdenado(ListaEnlazada<Apartamento> lista, Apartamento apartamento,
-            java.util.Comparator<Apartamento> criterioOrden) {
+                                  java.util.Comparator<Apartamento> criterioOrden) {
         if (criterioOrden == null) {
             lista.agregarFinal(apartamento);
             return;

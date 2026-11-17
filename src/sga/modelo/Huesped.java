@@ -74,4 +74,9 @@ public class Huesped implements Comparable<Huesped> {
     public int compareTo(Huesped otro) {
         return documento.compareTo(otro.documento);
     }
+
+    @Override
+    public String toString() {
+        return nombre + " (" + documento + ")";
+    }
 }
