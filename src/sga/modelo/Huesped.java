@@ -16,12 +16,12 @@ public class Huesped implements Comparable<Huesped> {
     private final ListaEnlazada<Object> historial = new ListaEnlazada<>();
 
     public Huesped(String documento, String nombre, LocalDate fechaNacimiento,
-            String telefono, String correo) {
-        this(documento, nombre, fechaNacimiento, telefono, correo, null);
+                   String telefono, String correo) {
+        this(nombre, documento, fechaNacimiento, telefono, correo, null);
     }
 
     public Huesped(String nombre, String documento, LocalDate fechaNacimiento,
-            String telefono, String correo, String rutaFotografia) {
+                   String telefono, String correo, String rutaFotografia) {
         this.nombre = nombre;
         this.documento = documento;
         this.fechaNacimiento = fechaNacimiento;

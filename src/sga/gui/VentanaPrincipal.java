@@ -5,6 +5,7 @@ import estructuras.ListaEnlazada;
 import excepciones.FechasInvalidasException;
 import modelo.*;
 import persistencia.CargadorEscenario;
+import persistencia.LectorEscenario;
 import servicios.ServicioEstadisticas;
 import servicios.SistemaAlojamiento;
 
@@ -14,6 +15,8 @@ import java.time.LocalDate;
 import java.util.Comparator;
 
 public class VentanaPrincipal extends JFrame {
+    private static final String ARCHIVO_ESCENARIO = "datos/escenario.txt";
+
     private SistemaAlojamiento sistema;
     private final JPanel tablero = new JPanel(new GridLayout(0, 2, 8, 8));
     private final JTextArea areaReservas = new JTextArea();
@@ -25,7 +28,7 @@ public class VentanaPrincipal extends JFrame {
 
     public VentanaPrincipal() {
         super("SGA — Aparta-Suites UQ");
-        this.sistema = CargadorEscenario.cargar();
+        this.sistema = leerEscenarioInicial();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1100, 720);
         setLocationRelativeTo(null);
@@ -42,15 +45,31 @@ public class VentanaPrincipal extends JFrame {
         refrescarTodo();
     }
 
+    /**
+     * Al abrir la aplicación se intenta leer el archivo; si no existe o tiene
+     * errores se usa el escenario que está escrito en el código.
+     */
+    private SistemaAlojamiento leerEscenarioInicial() {
+        try {
+            return LectorEscenario.cargar(ARCHIVO_ESCENARIO);
+        } catch (Exception ex) {
+            return CargadorEscenario.cargar();
+        }
+    }
+
     private JPanel crearInicio() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         JLabel titulo = new JLabel("Tablero de apartamentos — " + sistema.getNombre(), SwingConstants.CENTER);
         titulo.setFont(new Font("SansSerif", Font.BOLD, 18));
-        JButton cargar = new JButton("Cargar escenario de prueba");
+        JButton cargar = new JButton("Cargar escenario de prueba (" + ARCHIVO_ESCENARIO + ")");
         cargar.addActionListener(e -> {
-            sistema = CargadorEscenario.cargar();
-            panelMapa.setSistema(sistema);
-            refrescarTodo();
+            try {
+                sistema = LectorEscenario.cargar(ARCHIVO_ESCENARIO);
+                panelMapa.setSistema(sistema);
+                refrescarTodo();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "No se pudo cargar el escenario:\n" + ex.getMessage());
+            }
         });
         panel.add(titulo, BorderLayout.NORTH);
         panel.add(new JScrollPane(tablero), BorderLayout.CENTER);
