@@ -319,6 +319,7 @@ public class VentanaPrincipal extends JFrame {
                     + "<br>" + apto.getEstado() + "</html>");
             boton.setBackground(colorEstado(apto));
             boton.setOpaque(true);
+            boton.addActionListener(e -> mostrarDetalleApartamento(apto));
             tablero.add(boton);
         }
         tablero.revalidate();
@@ -364,6 +365,36 @@ public class VentanaPrincipal extends JFrame {
         LocalDate hoy = LocalDate.now();
         ServicioEstadisticas estadisticas = new ServicioEstadisticas(sistema, hoy.minusDays(15), hoy.plusDays(15));
         areaEstadisticas.setText("Turno recepción: " + sistema.turnoActual() + "\n\n" + estadisticas.generarReporte());
+    }
+
+    /** Al tocar una tarjeta del tablero se muestran los datos y las reservas del apartamento. */
+    private void mostrarDetalleApartamento(Apartamento apto) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(apto.getCodigo()).append(" - ").append(apto.getNombre()).append("\n");
+        sb.append("Bloque ").append(apto.getBloque()).append(", piso ").append(apto.getPiso()).append("\n");
+        sb.append("Dormitorios: ").append(apto.getNumeroDormitorios())
+                .append(" | Capacidad: ").append(apto.getCapacidadMaxima()).append(" personas\n");
+        sb.append("Características: ").append(apto.getCaracteristicas()).append("\n");
+        sb.append(String.format("Tarifa base: $%,.0f por persona por noche%n", apto.getTarifaBasePorPersona()));
+        sb.append("Estado: ").append(apto.getEstado()).append("\n");
+        if (apto.getMotivoFueraDeServicio() != null) {
+            sb.append("Motivo fuera de servicio: ").append(apto.getMotivoFueraDeServicio()).append("\n");
+        }
+        sb.append("\nReservas (ordenadas por fecha de entrada):\n");
+        boolean hay = false;
+        for (Reserva reserva : apto.getReservas()) {
+            hay = true;
+            sb.append("  ").append(reserva.getIdReserva()).append(" | ")
+                    .append(reserva.getEstancia().getFechaEntrada()).append(" a ")
+                    .append(reserva.getEstancia().getFechaSalida()).append(" | ")
+                    .append(reserva.getEstado()).append(" | ")
+                    .append(reserva.getTitular().getNombre()).append("\n");
+        }
+        if (!hay) {
+            sb.append("  (sin reservas)\n");
+        }
+        JOptionPane.showMessageDialog(this, sb.toString(), "Apartamento " + apto.getCodigo(),
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private Color colorEstado(Apartamento apto) {
