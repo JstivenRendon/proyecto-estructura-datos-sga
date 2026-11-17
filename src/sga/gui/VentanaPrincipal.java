@@ -24,6 +24,7 @@ public class VentanaPrincipal extends JFrame {
     private final JTextArea areaUsuario = new JTextArea();
     private final JTextArea areaEstadisticas = new JTextArea();
     private final DefaultListModel<String> modeloPreparacion = new DefaultListModel<>();
+    private final JTextArea areaRuta = new JTextArea(3, 40);
     private PanelMapa panelMapa;
 
     public VentanaPrincipal() {
@@ -67,6 +68,7 @@ public class VentanaPrincipal extends JFrame {
                 sistema = LectorEscenario.cargar(ARCHIVO_ESCENARIO);
                 panelMapa.setSistema(sistema);
                 refrescarTodo();
+                areaRuta.setText("");
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "No se pudo cargar el escenario:\n" + ex.getMessage());
             }
@@ -166,13 +168,16 @@ public class VentanaPrincipal extends JFrame {
                 TareaPreparacion t = sistema.despacharPreparacion();
                 JOptionPane.showMessageDialog(this, "Preparado: " + t.getApartamento().getCodigo());
                 refrescarTodo();
+                areaRuta.setText("");
+                panelMapa.setRuta(null);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage());
             }
         });
         ruta.addActionListener(e -> {
-            panelMapa.setRuta(sistema.rutaPreparacion());
-            JOptionPane.showMessageDialog(this, "Ruta dibujada en la pestaña Mapa");
+            ListaEnlazada<NodoEdificio> rutaCalculada = sistema.rutaPreparacion();
+            panelMapa.setRuta(rutaCalculada);
+            areaRuta.setText(textoRuta(rutaCalculada));
         });
         JPanel sur = new JPanel();
         sur.add(despachar);
@@ -185,6 +190,10 @@ public class VentanaPrincipal extends JFrame {
         }});
         turno.setText("Turno: " + sistema.turnoActual());
         sur.add(turno);
+        areaRuta.setEditable(false);
+        areaRuta.setLineWrap(true);
+        areaRuta.setWrapStyleWord(true);
+        panel.add(new JScrollPane(areaRuta), BorderLayout.NORTH);
         panel.add(new JScrollPane(lista), BorderLayout.CENTER);
         panel.add(sur, BorderLayout.SOUTH);
         return panel;
@@ -196,6 +205,12 @@ public class VentanaPrincipal extends JFrame {
         panel.add(new JLabel("Verde Preparado · Azul Ocupado · Amarillo preparación · Rojo fuera de servicio",
                 SwingConstants.CENTER), BorderLayout.NORTH);
         panel.add(panelMapa, BorderLayout.CENTER);
+
+        JButton agrupar = new JButton("Agrupar apartamentos por bloque (DFS)");
+        agrupar.addActionListener(e -> JOptionPane.showMessageDialog(this, sistema.reporteBloques()));
+        JPanel sur = new JPanel();
+        sur.add(agrupar);
+        panel.add(sur, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -258,6 +273,23 @@ public class VentanaPrincipal extends JFrame {
         }
     }
 
+    private String textoRuta(ListaEnlazada<NodoEdificio> ruta) {
+        if (ruta.estaVacia()) {
+            return "No hay apartamentos pendientes de preparación";
+        }
+        StringBuilder sb = new StringBuilder("Ruta: ");
+        boolean primero = true;
+        for (NodoEdificio nodo : ruta) {
+            if (!primero) {
+                sb.append(" -> ");
+            }
+            sb.append(nodo.getId());
+            primero = false;
+        }
+        sb.append("\nDistancia total: ").append(String.format("%.0f", sistema.distanciaRuta(ruta))).append(" m");
+        return sb.toString();
+    }
+
     private void mostrarUsuario(String documento) {
         Huesped h = sistema.buscarHuesped(documento.trim());
         if (h == null) {
@@ -314,8 +346,16 @@ public class VentanaPrincipal extends JFrame {
         areaCalendario.setText(cal.toString());
 
         modeloPreparacion.clear();
+        int posicion = 1;
         for (TareaPreparacion tarea : sistema.getColaPreparacion()) {
-            modeloPreparacion.addElement(tarea.toString());
+            String texto = posicion + ". " + tarea;
+            if (tarea.isEntradaHoy()) {
+                texto = texto + " (Prioridad 1, llega a las " + tarea.getHoraLlegada() + ")";
+            } else {
+                texto = texto + " (Prioridad 2)";
+            }
+            modeloPreparacion.addElement(texto);
+            posicion++;
         }
         if (panelMapa != null) {
             panelMapa.repaint();

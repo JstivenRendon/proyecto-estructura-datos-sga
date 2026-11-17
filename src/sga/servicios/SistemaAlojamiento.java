@@ -304,6 +304,75 @@ public class SistemaAlojamiento {
         return aptos;
     }
 
+    /** Suma los pesos (metros) de los pasillos que recorre la ruta. */
+    public double distanciaRuta(ListaEnlazada<NodoEdificio> ruta) {
+        double total = 0;
+        NodoEdificio anterior = null;
+        for (NodoEdificio nodo : ruta) {
+            if (anterior != null) {
+                for (Grafo.Arista<NodoEdificio> arista : mapa.adyacentes(anterior)) {
+                    if (arista.getDestino().equals(nodo)) {
+                        total += arista.getPeso();
+                        break;
+                    }
+                }
+            }
+            anterior = nodo;
+        }
+        return total;
+    }
+
+    /**
+     * Agrupa los apartamentos por bloque usando DFS (recursivo). Se parte de
+     * cada escalera y solo se recorren apartamentos: las demás escaleras y la
+     * recepción no se cruzan, así cada grupo queda dentro de su bloque.
+     */
+    public String reporteBloques() {
+        StringBuilder sb = new StringBuilder("Apartamentos agrupados por bloque (DFS):\n");
+        boolean hayEscaleras = false;
+
+        for (NodoEdificio nodo : nodosMapa) {
+            if (nodo.getTipo() == NodoEdificio.Tipo.SERVICIO && nodo.getId().startsWith("ESC")) {
+                hayEscaleras = true;
+                ListaEnlazada<Apartamento> grupo = new ListaEnlazada<>();
+                Conjunto<NodoEdificio> visitados = new Conjunto<>();
+                visitados.agregar(nodo);
+                dfsBloque(nodo, visitados, grupo);
+
+                if (grupo.estaVacia()) {
+                    sb.append("\n").append(nodo.getId()).append(": sin apartamentos");
+                } else {
+                    sb.append("\nBloque ").append(grupo.obtener(0).getBloque())
+                            .append(" (desde ").append(nodo.getId()).append("): ");
+                    boolean primero = true;
+                    for (Apartamento apto : grupo) {
+                        if (!primero) {
+                            sb.append(", ");
+                        }
+                        sb.append(apto.getCodigo());
+                        primero = false;
+                    }
+                }
+            }
+        }
+        if (!hayEscaleras) {
+            sb.append("\nNo hay escaleras en el mapa");
+        }
+        return sb.toString();
+    }
+
+    private void dfsBloque(NodoEdificio actual, Conjunto<NodoEdificio> visitados,
+                           ListaEnlazada<Apartamento> grupo) {
+        for (Grafo.Arista<NodoEdificio> arista : mapa.adyacentes(actual)) {
+            NodoEdificio vecino = arista.getDestino();
+            if (vecino.getTipo() == NodoEdificio.Tipo.APARTAMENTO && !visitados.contiene(vecino)) {
+                visitados.agregar(vecino);
+                grupo.agregarFinal(vecino.getApartamento());
+                dfsBloque(vecino, visitados, grupo);
+            }
+        }
+    }
+
     public boolean pasilloCierraAisla(String idPasilloA, String idPasilloB, String idObjetivo) {
         Grafo<NodoEdificio> reducido = new Grafo<>();
         for (NodoEdificio nodo : nodosMapa) {
